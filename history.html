@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>過去データ - 予想 vs 実際経費 割合ツール</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="header">
+    <h1>予想 vs 実際経費 割合ツール</h1>
+    <nav class="nav">
+      <a href="index.html" class="nav-link">計算画面</a>
+      <a href="history.html" class="nav-link active">過去データ</a>
+      <a href="test.html" class="nav-link">テスト画面</a>
+    </nav>
+  </header>
+
+  <main class="main">
+    <section class="section">
+      <h2>過去データ一覧</h2>
+      <p class="section-desc">保存した月別のデータです。詳細表示や計算画面への読み込み、削除ができます。</p>
+      <div id="historyList" class="history-list">
+        <!-- JS で描画 -->
+      </div>
+      <div id="emptyMessage" class="empty-message hidden">
+        保存されたデータはありません。計算画面で「この月のデータを保存」から保存してください。
+      </div>
+    </section>
+
+    <section id="detailSection" class="section detail-section hidden">
+      <h2>詳細</h2>
+      <div id="detailContent"></div>
+      <div class="detail-actions">
+        <button type="button" id="btnLoadDetail" class="btn-load">計算画面に読み込む</button>
+        <button type="button" id="btnCloseDetail" class="btn-close">閉じる</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      'use strict';
+      var STORAGE_KEY = 'labor-cost-history';
+      var LOAD_KEY = 'labor-cost-load';
+
+      function el(id) { return document.getElementById(id); }
+
+      function getHistory() {
+        try {
+          return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function formatNum(n) {
+        return typeof n === 'number' && !isNaN(n) ? n.toLocaleString() : '-';
+      }
+
+      function formatMonth(ym) {
+        if (!ym) return '-';
+        var p = String(ym).split('-');
+        return p[0] + '年' + (p[1] || '') + '月';
+      }
+
+      function deleteItem(index) {
+        var list = getHistory();
+        if (index < 0 || index >= list.length) return;
+        var item = list[index];
+        var msg = formatMonth(item.targetMonth) + 'のデータを削除しますか？この操作は取り消せません。';
+        if (!confirm(msg)) return;
+        list.splice(index, 1);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+        render();
+        el('detailSection').classList.add('hidden');
+      }
+
+      function loadToCalc(item) {
+        var data = {
+          targetMonth: item.targetMonth,
+          students: item.students,
+          businessDays: item.businessDays,
+          daily: item.daily,
+          voice: item.voice,
+          coaching: item.coaching,
+          actualDaily: item.actualDaily,
+          actualVoice: item.actualVoice,
+          actualCoaching: item.actualCoaching,
+        };
+        try {
+          sessionStorage.setItem(LOAD_KEY, JSON.stringify(data));
+          window.location.href = 'index.html';
+        } catch (e) {}
+      }
+
+      function renderDetail(item) {
+        var html = '<table class="detail-table">';
+        html += '<tr><th>対象月</th><td>' + formatMonth(item.targetMonth) + '</td></tr>';
+        html += '<tr><th>在籍生徒数</th><td>' + formatNum(item.students) + '</td></tr>';
+        html += '<tr><th>営業日数</th><td>' + formatNum(item.businessDays) + '</td></tr>';
+        html += '<tr class="sub-header"><th colspan="2">日報チーム（予想）</th></tr>';
+        html += '<tr><th>単価・分・提出率</th><td>' + (item.daily ? [item.daily.price, item.daily.mins, item.daily.rate].join(' / ') : '-') + '</td></tr>';
+        html += '<tr class="sub-header"><th colspan="2">日報チーム（実際）</th></tr>';
+        html += '<tr><th>単価・分・提出率</th><td>' + (item.actualDaily ? [item.actualDaily.price, item.actualDaily.mins, item.actualDaily.rate].join(' / ') : '-') + '</td></tr>';
+        html += '<tr class="sub-header"><th colspan="2">音声チーム（予想）</th></tr>';
+        html += '<tr><th>単価・分・提出率</th><td>' + (item.voice ? [item.voice.price, item.voice.mins, item.voice.rate].join(' / ') : '-') + '</td></tr>';
+        html += '<tr class="sub-header"><th colspan="2">音声チーム（実際）</th></tr>';
+        html += '<tr><th>単価・分・提出率</th><td>' + (item.actualVoice ? [item.actualVoice.price, item.actualVoice.mins, item.actualVoice.rate].join(' / ') : '-') + '</td></tr>';
+        html += '<tr class="sub-header"><th colspan="2">コーチングチーム（予想）</th></tr>';
+        html += '<tr><th>単価・回数・提出率</th><td>' + (item.coaching ? [item.coaching.price, item.coaching.count, item.coaching.rate].join(' / ') : '-') + '</td></tr>';
+        html += '<tr class="sub-header"><th colspan="2">コーチングチーム（実際）</th></tr>';
+        html += '<tr><th>単価・回数・提出率</th><td>' + (item.actualCoaching ? [item.actualCoaching.price, item.actualCoaching.count, item.actualCoaching.rate].join(' / ') : '-') + '</td></tr>';
+        html += '<tr><th>予想人件費</th><td>' + formatNum(item.expTotal) + '円</td></tr>';
+        html += '<tr><th>実際人件費</th><td>' + formatNum(item.actTotal) + '円</td></tr>';
+        html += '<tr><th>割合</th><td>' + (item.ratio || '-') + '%</td></tr>';
+        html += '<tr><th>保存日時</th><td>' + (item.savedAt ? new Date(item.savedAt).toLocaleString() : '-') + '</td></tr>';
+        html += '</table>';
+        return html;
+      }
+
+      var currentDetailIndex = -1;
+
+      function showDetail(index) {
+        var list = getHistory();
+        if (index < 0 || index >= list.length) return;
+        currentDetailIndex = index;
+        var item = list[index];
+        el('detailContent').innerHTML = renderDetail(item);
+        el('detailSection').classList.remove('hidden');
+      }
+
+      function render() {
+        var list = getHistory();
+        var container = el('historyList');
+        var emptyMsg = el('emptyMessage');
+        if (!container) return;
+
+        if (list.length === 0) {
+          container.innerHTML = '';
+          if (emptyMsg) emptyMsg.classList.remove('hidden');
+          return;
+        }
+        if (emptyMsg) emptyMsg.classList.add('hidden');
+
+        container.innerHTML = list.map(function (item, i) {
+          var saved = item.savedAt ? new Date(item.savedAt).toLocaleString() : '-';
+          return '<div class="history-item" data-index="' + i + '">' +
+            '<div class="history-item-main">' +
+              '<span class="history-month">' + formatMonth(item.targetMonth) + '</span>' +
+              '<span class="history-summary">予想 ' + formatNum(item.expTotal) + '円 / 実際 ' + formatNum(item.actTotal) + '円（生徒' + formatNum(item.students) + '人・割合' + (item.ratio || '-') + '%）</span>' +
+              '<span class="history-saved">保存: ' + saved + '</span>' +
+            '</div>' +
+            '<div class="history-item-actions">' +
+              '<button type="button" class="btn-detail" data-action="detail" data-index="' + i + '">詳細</button>' +
+              '<button type="button" class="btn-load-item" data-action="load" data-index="' + i + '">読み込む</button>' +
+              '<button type="button" class="btn-delete" data-action="delete" data-index="' + i + '">削除</button>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+
+        container.querySelectorAll('[data-action]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var idx = parseInt(btn.getAttribute('data-index'), 10);
+            var action = btn.getAttribute('data-action');
+            if (action === 'detail') showDetail(idx);
+            else if (action === 'load') loadToCalc(list[idx]);
+            else if (action === 'delete') deleteItem(idx);
+          });
+        });
+      }
+
+      function init() {
+        render();
+        var btnLoad = el('btnLoadDetail');
+        var btnClose = el('btnCloseDetail');
+        if (btnLoad) {
+          btnLoad.addEventListener('click', function () {
+            var list = getHistory();
+            if (currentDetailIndex >= 0 && currentDetailIndex < list.length) {
+              loadToCalc(list[currentDetailIndex]);
+            }
+          });
+        }
+        if (btnClose) {
+          btnClose.addEventListener('click', function () {
+            el('detailSection').classList.add('hidden');
+            currentDetailIndex = -1;
+          });
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+</body>
+</html>
