@@ -102,22 +102,27 @@
   }
 
   function updateResults(exp, act) {
-    const ids = [
-      'result-daily-per', 'result-daily-total', 'result-act-daily-per', 'result-act-daily-total',
-      'result-voice-per', 'result-voice-total', 'result-act-voice-per', 'result-act-voice-total',
-      'result-coaching-per', 'result-coaching-total', 'result-act-coaching-per', 'result-act-coaching-total',
-      'result-per-student', 'result-total', 'actual-per-student', 'actual-total',
-    ];
-    const vals = [
-      exp.dailyPer, exp.dailyTotal, act.dailyPer, act.dailyTotal,
-      exp.voicePer, exp.voiceTotal, act.voicePer, act.voiceTotal,
-      exp.coachingPer, exp.coachingTotal, act.coachingPer, act.coachingTotal,
-      exp.perStudent, exp.total, act.perStudent, act.total,
-    ];
-    ids.forEach(function (id, i) {
+    function set(id, val, suffix) {
       const e = el(id);
-      if (e) e.textContent = formatNum(vals[i]);
-    });
+      if (e) e.textContent = formatNum(val) + (suffix || '');
+    }
+    set('exp-daily-per', exp.dailyPer, '円');
+    set('exp-daily-total', exp.dailyTotal, '円');
+    set('exp-voice-per', exp.voicePer, '円');
+    set('exp-voice-total', exp.voiceTotal, '円');
+    set('exp-coaching-per', exp.coachingPer, '円');
+    set('exp-coaching-total', exp.coachingTotal, '円');
+    set('result-per-student', exp.perStudent);
+    set('result-total', exp.total);
+
+    set('act-daily-per', act.dailyPer, '円');
+    set('act-daily-total', act.dailyTotal, '円');
+    set('act-voice-per', act.voicePer, '円');
+    set('act-voice-total', act.voiceTotal, '円');
+    set('act-coaching-per', act.coachingPer, '円');
+    set('act-coaching-total', act.coachingTotal, '円');
+    set('actual-per-student', act.perStudent);
+    set('actual-total', act.total);
   }
 
   function ratioClass(ratio) {

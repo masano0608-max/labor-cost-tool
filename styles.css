@@ -171,10 +171,6 @@ body {
   overflow: visible;
 }
 
-.team-card .ea-grid {
-  overflow-x: auto;
-}
-
 .team-card:hover {
   border-color: #cbd5e0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -194,7 +190,126 @@ body {
   line-height: 1.5;
 }
 
-/* 予想・実際 グリッド（重なり・切れ防止） */
+/* チームカード入力 */
+.team-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.team-inputs label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #4a5568;
+  flex: 1;
+  min-width: 140px;
+}
+
+.team-inputs input {
+  padding: 0.6rem 0.75rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.team-inputs input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+/* チームカード結果表示 */
+.team-result {
+  display: grid;
+  grid-template-columns: auto 1fr auto 1fr;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #f0f9ff;
+  border-radius: 8px;
+  border: 1px solid #bae6fd;
+}
+
+.team-result-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.team-result-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0c4a6e;
+  font-family: "SF Mono", "Consolas", monospace;
+}
+
+/* 実際セクション */
+.section-actual {
+  border-left: 5px solid #0ea5e9;
+}
+
+.team-card-actual {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-color: #7dd3fc;
+}
+
+.team-card-actual .team-result {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.team-card-actual .team-result-value {
+  color: #1e40af;
+}
+
+/* セクション合計 */
+.section-total {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 2px solid #e2e8f0;
+}
+
+.section-total p {
+  margin: 0.4rem 0;
+  font-size: 1.05rem;
+  color: #4a5568;
+}
+
+.section-total .total-highlight {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.section-total .total-highlight strong {
+  font-size: 1.5rem;
+  letter-spacing: 0.02em;
+}
+
+.section-total-actual {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-color: #93c5fd;
+}
+
+.section-total-actual p {
+  color: #1e40af;
+}
+
+.section-total-actual .total-highlight {
+  color: #1e3a8a;
+}
+
+/* 予想・実際 グリッド（重なり・切れ防止 - 旧UIから残す） */
 .ea-grid {
   display: grid;
   grid-template-columns: minmax(100px, 2fr) minmax(80px, 1fr) minmax(80px, 1fr);
