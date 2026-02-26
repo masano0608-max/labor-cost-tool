@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="日報・音声・コーチングチームの人件費を予想と実際で比較し、割合を可視化するツール">
   <title>予想 vs 実際経費 割合ツール</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -22,9 +26,9 @@
       <h2>共通入力</h2>
       <div id="validationWrap" class="validation-wrap hidden"></div>
       <div class="input-group">
-        <label>対象月<input type="month" id="targetMonth" value=""></label>
-        <label>在籍生徒数<input type="number" id="students" min="1" value="100" placeholder="必須"></label>
-        <label>営業日数<input type="number" id="businessDays" min="1" max="31" value="30"></label>
+        <label>対象月<input type="month" id="targetMonth" value="" title="集計対象の月を選択"></label>
+        <label>在籍生徒数<input type="number" id="students" min="1" value="100" placeholder="必須" title="在籍している生徒の人数"></label>
+        <label>営業日数<input type="number" id="businessDays" min="1" max="31" value="30" title="その月の営業日数（1〜31）"></label>
       </div>
       <div class="save-area">
         <button type="button" id="saveBtn" class="btn-save">この月のデータを保存</button>
@@ -35,8 +39,9 @@
     </section>
 
     <!-- 日報チーム -->
-    <section class="section compare-section">
-      <h2>📋 日報チーム</h2>
+    <section class="section compare-section section-collapsible" data-team="daily">
+      <h2 class="section-toggle">📋 日報チーム</h2>
+      <div class="section-collapse-body">
       <p class="section-desc">時給 × 対応分数/日 × 営業日数 × 提出率</p>
       <div class="compare-columns">
         <div class="compare-col compare-col-expected">
@@ -55,6 +60,8 @@
           <div class="compare-col-header">実際</div>
           <div class="compare-inputs">
             <label>支払い総額（円）<input type="number" id="actual-daily-payment" min="0" value="0" placeholder="実際に支払った金額"></label>
+            <label>対応時間（分/人/日）<input type="number" id="actual-daily-mins" min="0" value="0" placeholder="実際の対応時間"></label>
+            <label>提出率（%）<input type="number" id="actual-daily-rate" min="0" max="100" value="0" placeholder="実際の提出率"></label>
           </div>
           <div class="compare-result">
             <div class="compare-result-row"><span>1人あたり/月</span><strong id="act-daily-per">0円</strong></div>
@@ -65,15 +72,19 @@
           <div class="compare-col-header">差異</div>
           <div class="compare-diff-body">
             <div class="compare-result-row"><span>1人あたり差</span><strong id="diff-daily-per">-</strong></div>
+            <div class="compare-result-row"><span>対応時間差</span><strong id="diff-daily-mins">-</strong></div>
+            <div class="compare-result-row"><span>提出率差</span><strong id="diff-daily-rate">-</strong></div>
             <div class="compare-result-row"><span>割合</span><strong id="ratio-daily">-</strong></div>
           </div>
         </div>
       </div>
+      </div>
     </section>
 
     <!-- 音声チーム -->
-    <section class="section compare-section">
-      <h2>🎙 音声チーム</h2>
+    <section class="section compare-section section-collapsible" data-team="voice">
+      <h2 class="section-toggle">🎙 音声チーム</h2>
+      <div class="section-collapse-body">
       <p class="section-desc">時給 × 対応分数/日 × 営業日数 × 提出率</p>
       <div class="compare-columns">
         <div class="compare-col compare-col-expected">
@@ -92,6 +103,8 @@
           <div class="compare-col-header">実際</div>
           <div class="compare-inputs">
             <label>支払い総額（円）<input type="number" id="actual-voice-payment" min="0" value="0" placeholder="実際に支払った金額"></label>
+            <label>対応時間（分/人/日）<input type="number" id="actual-voice-mins" min="0" value="0" placeholder="実際の対応時間"></label>
+            <label>提出率（%）<input type="number" id="actual-voice-rate" min="0" max="100" value="0" placeholder="実際の提出率"></label>
           </div>
           <div class="compare-result">
             <div class="compare-result-row"><span>1人あたり/月</span><strong id="act-voice-per">0円</strong></div>
@@ -102,15 +115,19 @@
           <div class="compare-col-header">差異</div>
           <div class="compare-diff-body">
             <div class="compare-result-row"><span>1人あたり差</span><strong id="diff-voice-per">-</strong></div>
+            <div class="compare-result-row"><span>対応時間差</span><strong id="diff-voice-mins">-</strong></div>
+            <div class="compare-result-row"><span>提出率差</span><strong id="diff-voice-rate">-</strong></div>
             <div class="compare-result-row"><span>割合</span><strong id="ratio-voice">-</strong></div>
           </div>
         </div>
       </div>
+      </div>
     </section>
 
     <!-- コーチングチーム -->
-    <section class="section compare-section">
-      <h2>💬 コーチングチーム</h2>
+    <section class="section compare-section section-collapsible" data-team="coaching">
+      <h2 class="section-toggle">💬 コーチングチーム</h2>
+      <div class="section-collapse-body">
       <p class="section-desc">単価 × 回数/月 × 提出率</p>
       <div class="compare-columns">
         <div class="compare-col compare-col-expected">
@@ -129,6 +146,8 @@
           <div class="compare-col-header">実際</div>
           <div class="compare-inputs">
             <label>支払い総額（円）<input type="number" id="actual-coaching-payment" min="0" value="0" placeholder="実際に支払った金額"></label>
+            <label>対応回数（回/人/月）<input type="number" id="actual-coaching-count" min="0" value="0" placeholder="実際の回数"></label>
+            <label>提出率（%）<input type="number" id="actual-coaching-rate" min="0" max="100" value="0" placeholder="実際の提出率"></label>
           </div>
           <div class="compare-result">
             <div class="compare-result-row"><span>1人あたり/月</span><strong id="act-coaching-per">0円</strong></div>
@@ -139,9 +158,12 @@
           <div class="compare-col-header">差異</div>
           <div class="compare-diff-body">
             <div class="compare-result-row"><span>1人あたり差</span><strong id="diff-coaching-per">-</strong></div>
+            <div class="compare-result-row"><span>回数差</span><strong id="diff-coaching-count">-</strong></div>
+            <div class="compare-result-row"><span>提出率差</span><strong id="diff-coaching-rate">-</strong></div>
             <div class="compare-result-row"><span>割合</span><strong id="ratio-coaching">-</strong></div>
           </div>
         </div>
+      </div>
       </div>
     </section>
 

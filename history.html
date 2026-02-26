@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>過去データ - 予想 vs 実際経費 割合ツール</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -17,6 +18,19 @@
   </header>
 
   <main class="main">
+    <section class="section" id="chartSection">
+      <h2>月別推移グラフ</h2>
+      <p class="section-desc">予想と実際の人件費の推移を確認できます。</p>
+      <div id="chartContainer" class="chart-container hidden">
+        <div class="chart-bars" id="chartBars"></div>
+        <div class="chart-legend">
+          <span><span class="dot chart-bar-expected"></span>予想</span>
+          <span><span class="dot chart-bar-actual"></span>実際</span>
+        </div>
+      </div>
+      <div id="chartEmpty" class="empty-message">データを保存するとグラフが表示されます</div>
+    </section>
+
     <section class="section">
       <h2>過去データ一覧</h2>
       <p class="section-desc">保存した月別のデータです。詳細表示や計算画面への読み込み、削除ができます。</p>
@@ -144,11 +158,44 @@
         el('detailSection').classList.remove('hidden');
       }
 
+      function renderChart(list) {
+        var chartContainer = el('chartContainer');
+        var chartBars = el('chartBars');
+        var chartEmpty = el('chartEmpty');
+        if (!chartContainer || !chartBars) return;
+
+        if (list.length === 0) {
+          chartContainer.classList.add('hidden');
+          if (chartEmpty) chartEmpty.classList.remove('hidden');
+          return;
+        }
+        chartContainer.classList.remove('hidden');
+        if (chartEmpty) chartEmpty.classList.add('hidden');
+
+        var maxVal = Math.max.apply(null, list.map(function (x) { return Math.max(x.expTotal || 0, x.actTotal || 0); }));
+        if (maxVal <= 0) maxVal = 1;
+
+        chartBars.innerHTML = list.slice(0, 12).reverse().map(function (item) {
+          var expH = ((item.expTotal || 0) / maxVal) * 100;
+          var actH = ((item.actTotal || 0) / maxVal) * 100;
+          var lbl = item.targetMonth ? String(item.targetMonth).replace('-', '/') : '-';
+          return '<div class="chart-bar-group">' +
+            '<div class="chart-bar-wrap">' +
+              '<div class="chart-bar chart-bar-expected" style="height:' + expH + '%"></div>' +
+              '<div class="chart-bar chart-bar-actual" style="height:' + actH + '%"></div>' +
+            '</div>' +
+            '<span class="chart-label">' + lbl + '</span>' +
+          '</div>';
+        }).join('');
+      }
+
       function render() {
         var list = getHistory();
         var container = el('historyList');
         var emptyMsg = el('emptyMessage');
         if (!container) return;
+
+        renderChart(list);
 
         if (list.length === 0) {
           container.innerHTML = '';

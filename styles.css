@@ -109,6 +109,28 @@ body {
   border-bottom: 2px solid var(--accent);
 }
 
+/* 折りたたみ可能セクション */
+.section-collapsible h2.section-toggle {
+  cursor: pointer;
+  user-select: none;
+}
+
+.section-collapsible h2.section-toggle::after {
+  content: '▼';
+  font-size: 0.65rem;
+  opacity: 0.6;
+  margin-left: auto;
+  transition: transform 0.2s ease;
+}
+
+.section-collapsible.collapsed h2.section-toggle::after {
+  transform: rotate(-90deg);
+}
+
+.section-collapsible.collapsed .section-collapse-body {
+  display: none;
+}
+
 .section-desc {
   margin: -0.5rem 0 1rem;
   font-size: 0.85rem;
@@ -336,7 +358,14 @@ body {
 .compare-diff-body .compare-result-row strong.under { color: var(--success); }
 .compare-diff-body .compare-result-row strong.exact { color: var(--text-muted); }
 
-/* ─── 全体サマリー ─── */
+/* ─── 全体サマリー（スクロール時に上部に固定表示） ─── */
+.summary-section {
+  position: sticky;
+  top: 1rem;
+  z-index: 5;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+}
+
 .summary-section h2 {
   border-bottom-color: #fbbf24;
 }
@@ -690,12 +719,98 @@ body {
   }
 }
 
+/* ─── 推移グラフ（過去データ） ─── */
+.chart-container {
+  margin: 1rem 0;
+  padding: 1.25rem;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-light);
+}
+
+.chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  height: 160px;
+  padding: 0.5rem 0;
+}
+
+.chart-bar-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.chart-bar-wrap {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  max-width: 48px;
+  margin: 0 auto;
+}
+
+.chart-bar {
+  flex: 1;
+  border-radius: 4px 4px 0 0;
+  min-height: 4px;
+  min-width: 6px;
+  transition: height 0.3s ease;
+}
+
+.chart-bar-expected {
+  background: var(--expected);
+  opacity: 0.9;
+}
+
+.chart-bar-actual {
+  background: var(--actual);
+  opacity: 0.9;
+}
+
+.chart-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  text-align: center;
+}
+
+.chart-legend {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.chart-legend span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chart-legend .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
 /* ─── 印刷用 ─── */
 @media print {
   body { background: #fff; color: #1e293b; }
   .header { position: static; box-shadow: none; border-bottom: 2px solid #1e293b; background: #fff; }
   .header h1 { -webkit-text-fill-color: #1e293b; color: #1e293b; }
   .section { box-shadow: none; border-color: #cbd5e1; background: #fff; }
-  .nav, .save-area, .copy-buttons, .validation-wrap { display: none !important; }
+  .nav, .save-area, .copy-buttons, .validation-wrap, #chartSection { display: none !important; }
   input { border: 1px solid #94a3b8 !important; background: #fff !important; color: #1e293b !important; }
 }

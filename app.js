@@ -58,8 +58,14 @@
       students: students,
       businessDays: Number(el('businessDays')?.value) || 0,
       dailyPayment: Number(el('actual-daily-payment')?.value) || 0,
+      dailyMins: Number(el('actual-daily-mins')?.value) || 0,
+      dailyRate: Number(el('actual-daily-rate')?.value) || 0,
       voicePayment: Number(el('actual-voice-payment')?.value) || 0,
+      voiceMins: Number(el('actual-voice-mins')?.value) || 0,
+      voiceRate: Number(el('actual-voice-rate')?.value) || 0,
       coachingPayment: Number(el('actual-coaching-payment')?.value) || 0,
+      coachingCount: Number(el('actual-coaching-count')?.value) || 0,
+      coachingRate: Number(el('actual-coaching-rate')?.value) || 0,
     };
   }
 
@@ -83,22 +89,6 @@
 
   function formatNum(n) {
     return typeof n === 'number' && !isNaN(n) ? n.toLocaleString() : '-';
-  }
-
-  function updateOverview(inputs) {
-    const days = inputs.businessDays || 0;
-    const d = inputs.daily || {};
-    const v = inputs.voice || {};
-    const c = inputs.coaching || {};
-    const dailyExpr = (d.price || 0) + ' × (' + (d.mins || 0) + '÷60) × ' + days + '日 × ' + (d.rate || 0) + '%';
-    const voiceExpr = (v.price || 0) + ' × (' + (v.mins || 0) + '÷60) × ' + days + '日 × ' + (v.rate || 0) + '%';
-    const coachingExpr = (c.price || 0) + ' × ' + (c.count || 0) + '回 × ' + (c.rate || 0) + '%';
-    const o1 = el('overview-daily');
-    const o2 = el('overview-voice');
-    const o3 = el('overview-coaching');
-    if (o1) o1.textContent = '日報: ' + dailyExpr;
-    if (o2) o2.textContent = '音声: ' + voiceExpr;
-    if (o3) o3.textContent = 'コーチング: ' + coachingExpr;
   }
 
   function updateResults(exp, act) {
@@ -147,6 +137,24 @@
     setRatio('ratio-voice', exp.voiceTotal, act.voiceTotal);
     setDiff('diff-coaching-per', exp.coachingPer, act.coachingPer);
     setRatio('ratio-coaching', exp.coachingTotal, act.coachingTotal);
+
+    var inputs = getInputs();
+    var actInputs = getActualInputs();
+    setParamDiff('diff-daily-mins', inputs.daily.mins, actInputs.dailyMins, '分');
+    setParamDiff('diff-daily-rate', inputs.daily.rate, actInputs.dailyRate, '%');
+    setParamDiff('diff-voice-mins', inputs.voice.mins, actInputs.voiceMins, '分');
+    setParamDiff('diff-voice-rate', inputs.voice.rate, actInputs.voiceRate, '%');
+    setParamDiff('diff-coaching-count', inputs.coaching.count, actInputs.coachingCount, '回');
+    setParamDiff('diff-coaching-rate', inputs.coaching.rate, actInputs.coachingRate, '%');
+  }
+
+  function setParamDiff(id, expVal, actVal, unit) {
+    var e = el(id);
+    if (!e) return;
+    if (!actVal && !expVal) { e.textContent = '-'; e.className = ''; return; }
+    var diff = actVal - expVal;
+    e.textContent = (diff > 0 ? '+' : '') + diff + unit;
+    e.className = diff > 0 ? 'over' : diff < 0 ? 'under' : 'exact';
   }
 
   function ratioClass(ratio) {
@@ -188,7 +196,6 @@
 
     const inputs = getInputs();
     const actualInputs = getActualInputs();
-    updateOverview(inputs);
 
     const exp = LaborCostCalc.calculate(inputs);
     const act = LaborCostCalc.calculateActualFromPayments(actualInputs);
@@ -227,8 +234,14 @@
       set('coaching-count', inp.coaching?.count);
       set('coaching-rate', inp.coaching?.rate);
       set('actual-daily-payment', act.dailyPayment ?? 0);
+      set('actual-daily-mins', act.dailyMins ?? 0);
+      set('actual-daily-rate', act.dailyRate ?? 0);
       set('actual-voice-payment', act.voicePayment ?? 0);
+      set('actual-voice-mins', act.voiceMins ?? 0);
+      set('actual-voice-rate', act.voiceRate ?? 0);
       set('actual-coaching-payment', act.coachingPayment ?? 0);
+      set('actual-coaching-count', act.coachingCount ?? 0);
+      set('actual-coaching-rate', act.coachingRate ?? 0);
     } catch (e) {}
   }
 
@@ -257,8 +270,14 @@
       coachingPay = a.coachingTotal;
     }
     set('actual-daily-payment', dailyPay ?? 0);
+    set('actual-daily-mins', data.actualDailyMins ?? 0);
+    set('actual-daily-rate', data.actualDailyRate ?? 0);
     set('actual-voice-payment', voicePay ?? 0);
+    set('actual-voice-mins', data.actualVoiceMins ?? 0);
+    set('actual-voice-rate', data.actualVoiceRate ?? 0);
     set('actual-coaching-payment', coachingPay ?? 0);
+    set('actual-coaching-count', data.actualCoachingCount ?? 0);
+    set('actual-coaching-rate', data.actualCoachingRate ?? 0);
     saveDraft();
   }
 
@@ -281,8 +300,14 @@
       voice: inputs.voice,
       coaching: inputs.coaching,
       actualDailyPayment: actualInputs.dailyPayment,
+      actualDailyMins: actualInputs.dailyMins,
+      actualDailyRate: actualInputs.dailyRate,
       actualVoicePayment: actualInputs.voicePayment,
+      actualVoiceMins: actualInputs.voiceMins,
+      actualVoiceRate: actualInputs.voiceRate,
       actualCoachingPayment: actualInputs.coachingPayment,
+      actualCoachingCount: actualInputs.coachingCount,
+      actualCoachingRate: actualInputs.coachingRate,
       expTotal: exp.total,
       actTotal: act.total,
       ratio: exp.total > 0 ? (act.total / exp.total * 100).toFixed(1) : '-',
@@ -311,19 +336,21 @@
     const act = LaborCostCalc.calculateActualFromPayments(actualInputs);
     const month = (inputs.targetMonth || '').replace('-', '年') + '月';
     const rows = [
-      ['項目', '値'],
-      ['対象月', month],
-      ['在籍生徒数', inputs.students],
-      ['営業日数', inputs.businessDays],
-      ['日報 予想/人', exp.dailyPer],
-      ['日報 実際/人', act.dailyPer],
-      ['音声 予想/人', exp.voicePer],
-      ['音声 実際/人', act.voicePer],
-      ['コーチング 予想/人', exp.coachingPer],
-      ['コーチング 実際/人', act.coachingPer],
-      ['予想人件費', exp.total],
-      ['実際人件費', act.total],
-      ['割合(%)', exp.total > 0 ? (act.total / exp.total * 100).toFixed(1) : '-'],
+      ['項目', '予想', '実際'],
+      ['対象月', month, ''],
+      ['在籍生徒数', inputs.students, ''],
+      ['営業日数', inputs.businessDays, ''],
+      ['日報 1人あたり/月', exp.dailyPer, act.dailyPer],
+      ['日報 対応時間(分)', inputs.daily.mins, actualInputs.dailyMins],
+      ['日報 提出率(%)', inputs.daily.rate, actualInputs.dailyRate],
+      ['音声 1人あたり/月', exp.voicePer, act.voicePer],
+      ['音声 対応時間(分)', inputs.voice.mins, actualInputs.voiceMins],
+      ['音声 提出率(%)', inputs.voice.rate, actualInputs.voiceRate],
+      ['コーチング 1人あたり/月', exp.coachingPer, act.coachingPer],
+      ['コーチング 回数', inputs.coaching.count, actualInputs.coachingCount],
+      ['コーチング 提出率(%)', inputs.coaching.rate, actualInputs.coachingRate],
+      ['合計人件費', exp.total, act.total],
+      ['割合(%)', '', exp.total > 0 ? (act.total / exp.total * 100).toFixed(1) : '-'],
     ];
     const csv = '\uFEFF' + rows.map(function (r) { return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
     const a = document.createElement('a');
@@ -372,9 +399,12 @@
     runCalculation();
 
     var ids = ['students', 'businessDays', 'targetMonth',
-      'daily-price', 'daily-mins', 'daily-rate', 'actual-daily-payment',
-      'voice-price', 'voice-mins', 'voice-rate', 'actual-voice-payment',
-      'coaching-price', 'coaching-count', 'coaching-rate', 'actual-coaching-payment'];
+      'daily-price', 'daily-mins', 'daily-rate',
+      'actual-daily-payment', 'actual-daily-mins', 'actual-daily-rate',
+      'voice-price', 'voice-mins', 'voice-rate',
+      'actual-voice-payment', 'actual-voice-mins', 'actual-voice-rate',
+      'coaching-price', 'coaching-count', 'coaching-rate',
+      'actual-coaching-payment', 'actual-coaching-count', 'actual-coaching-rate'];
     ids.forEach(function (id) {
       var e = el(id);
       if (e) e.addEventListener('input', debouncedRun);
@@ -382,16 +412,36 @@
 
     var saveBtn = el('saveBtn');
     if (saveBtn) saveBtn.addEventListener('click', saveToHistory);
+
+    document.addEventListener('keydown', function (e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        saveToHistory();
+      }
+    });
     var exportBtn = el('exportCsvBtn');
     if (exportBtn) exportBtn.addEventListener('click', exportCsv);
     var copyExp = el('copyExpectedToActual');
     if (copyExp) copyExp.addEventListener('click', copyExpectedToActual);
   }
 
+  function initCollapsible() {
+    document.querySelectorAll('.section-collapsible h2.section-toggle').forEach(function (h) {
+      h.addEventListener('click', function () {
+        var section = h.closest('.section-collapsible');
+        if (section) section.classList.toggle('collapsed');
+      });
+    });
+  }
+
   window.LaborCostCalc = LaborCostCalc;
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', function () {
+      init();
+      initCollapsible();
+    });
   } else {
     init();
+    initCollapsible();
   }
 })();
