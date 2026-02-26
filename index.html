@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>予想 vs 実際経費 割合ツール</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="header">
+    <h1>予想 vs 実際経費 割合ツール</h1>
+    <nav class="nav">
+      <a href="index.html" class="nav-link active">計算画面</a>
+      <a href="history.html" class="nav-link">過去データ</a>
+      <a href="test.html" class="nav-link">テスト画面</a>
+    </nav>
+  </header>
+
+  <main class="main">
+    <!-- 計算の概要 -->
+    <section class="section overview">
+      <h2>計算の概要</h2>
+      <div id="calcOverview" class="overview-content">
+        <p class="overview-item" id="overview-daily"></p>
+        <p class="overview-item" id="overview-voice"></p>
+        <p class="overview-item" id="overview-coaching"></p>
+        <p class="overview-item overview-total">総額: 1人あたり合計 × 在籍生徒数</p>
+      </div>
+    </section>
+
+    <!-- 共通入力 -->
+    <section class="section">
+      <h2>共通入力</h2>
+      <div id="validationWrap" class="validation-wrap hidden"></div>
+      <div class="input-group">
+        <label>
+          対象月
+          <input type="month" id="targetMonth" value="">
+        </label>
+        <label>
+          在籍生徒数
+          <input type="number" id="students" min="1" value="100" placeholder="必須">
+        </label>
+        <label>
+          営業日数
+          <input type="number" id="businessDays" min="1" max="31" value="30">
+        </label>
+      </div>
+      <div class="save-area">
+        <button type="button" id="saveBtn" class="btn-save">この月のデータを保存</button>
+        <button type="button" id="exportCsvBtn" class="btn-export">CSVダウンロード</button>
+        <button type="button" onclick="window.print()" class="btn-print">印刷</button>
+        <span id="saveMessage" class="save-message"></span>
+      </div>
+    </section>
+
+    <!-- 各チームの入力（予想・実際 同じ項目） -->
+    <section class="section">
+      <h2>チーム別入力（単価・対応時間・提出率）</h2>
+      <p class="section-desc">予想と実際を同じ項目で入力。両方とも入力値から計算します。「予想を実際にコピー」で入力の手間を省けます。</p>
+      <div class="copy-buttons">
+        <button type="button" id="copyExpectedToActual" class="btn-copy">予想 → 実際にコピー</button>
+        <button type="button" id="copyActualToExpected" class="btn-copy">実際 → 予想にコピー</button>
+      </div>
+      <div class="teams-grid">
+        <div class="team-card">
+          <h3>日報チーム</h3>
+          <p class="team-desc">時給 × 対応分数/日 × 営業日数 × 提出率</p>
+          <table class="ea-table">
+            <thead>
+              <tr><th></th><th>予想</th><th>実際</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th>単価（円/時）</th>
+                <td><input type="number" id="daily-price" min="0" value="2282"></td>
+                <td><input type="number" id="actual-daily-price" min="0" value="2282"></td>
+              </tr>
+              <tr>
+                <th>対応時間（分/人/日）</th>
+                <td><input type="number" id="daily-mins" min="0" value="5"></td>
+                <td><input type="number" id="actual-daily-mins" min="0" value="5"></td>
+              </tr>
+              <tr>
+                <th>提出率（%）</th>
+                <td><input type="number" id="daily-rate" min="0" max="100" value="100"></td>
+                <td><input type="number" id="actual-daily-rate" min="0" max="100" value="80"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="team-card">
+          <h3>音声チーム</h3>
+          <p class="team-desc">時給 × 対応分数/日 × 営業日数 × 提出率</p>
+          <table class="ea-table">
+            <thead>
+              <tr><th></th><th>予想</th><th>実際</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th>単価（円/時）</th>
+                <td><input type="number" id="voice-price" min="0" value="1209"></td>
+                <td><input type="number" id="actual-voice-price" min="0" value="1209"></td>
+              </tr>
+              <tr>
+                <th>対応時間（分/人/日）</th>
+                <td><input type="number" id="voice-mins" min="0" value="4"></td>
+                <td><input type="number" id="actual-voice-mins" min="0" value="4"></td>
+              </tr>
+              <tr>
+                <th>提出率（%）</th>
+                <td><input type="number" id="voice-rate" min="0" max="100" value="100"></td>
+                <td><input type="number" id="actual-voice-rate" min="0" max="100" value="70"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="team-card">
+          <h3>コーチングチーム</h3>
+          <p class="team-desc">単価 × 回数/月 × 提出率</p>
+          <table class="ea-table">
+            <thead>
+              <tr><th></th><th>予想</th><th>実際</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th>単価（円/回）</th>
+                <td><input type="number" id="coaching-price" min="0" value="1750"></td>
+                <td><input type="number" id="actual-coaching-price" min="0" value="1750"></td>
+              </tr>
+              <tr>
+                <th>対応回数（回/人/月）</th>
+                <td><input type="number" id="coaching-count" min="0" value="4"></td>
+                <td><input type="number" id="actual-coaching-count" min="0" value="4"></td>
+              </tr>
+              <tr>
+                <th>提出率（%）</th>
+                <td><input type="number" id="coaching-rate" min="0" max="100" value="100"></td>
+                <td><input type="number" id="actual-coaching-rate" min="0" max="100" value="100"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 計算結果 -->
+    <section class="section results">
+      <h2>計算結果</h2>
+      <div class="results-grid">
+        <div class="result-item">
+          <span class="result-label">日報チーム</span>
+          <span class="result-value">予想 <span id="result-daily-per">0</span>円/人</span>
+          <span class="result-total">合計 <span id="result-daily-total">0</span>円</span>
+        </div>
+        <div class="result-item actual-row">
+          <span class="result-label"></span>
+          <span class="result-value">実際 <span id="result-act-daily-per">0</span>円/人</span>
+          <span class="result-total">合計 <span id="result-act-daily-total">0</span>円</span>
+        </div>
+        <div class="result-item">
+          <span class="result-label">音声チーム</span>
+          <span class="result-value">予想 <span id="result-voice-per">0</span>円/人</span>
+          <span class="result-total">合計 <span id="result-voice-total">0</span>円</span>
+        </div>
+        <div class="result-item actual-row">
+          <span class="result-label"></span>
+          <span class="result-value">実際 <span id="result-act-voice-per">0</span>円/人</span>
+          <span class="result-total">合計 <span id="result-act-voice-total">0</span>円</span>
+        </div>
+        <div class="result-item">
+          <span class="result-label">コーチングチーム</span>
+          <span class="result-value">予想 <span id="result-coaching-per">0</span>円/人</span>
+          <span class="result-total">合計 <span id="result-coaching-total">0</span>円</span>
+        </div>
+        <div class="result-item actual-row">
+          <span class="result-label"></span>
+          <span class="result-value">実際 <span id="result-act-coaching-per">0</span>円/人</span>
+          <span class="result-total">合計 <span id="result-act-coaching-total">0</span>円</span>
+        </div>
+      </div>
+      <div class="result-summary">
+        <p class="per-student">生徒1人あたり合計（予想）: <strong id="result-per-student">0</strong>円</p>
+        <p class="total-cost">予想人件費: <strong id="result-total">0</strong>円</p>
+      </div>
+      <div class="actual-summary">
+        <p class="per-student">生徒1人あたり合計（実際）: <strong id="actual-per-student">0</strong>円</p>
+        <p class="total-cost">実際人件費: <strong id="actual-total">0</strong>円</p>
+      </div>
+    </section>
+
+    <!-- 割合・逆算結果 -->
+    <section class="section ratio-section">
+      <h2>割合・逆算結果</h2>
+      <div class="ratio-results">
+        <div class="ratio-block">
+          <h3>チーム別 予想 vs 実際</h3>
+          <div class="ratio-table">
+            <div class="ratio-row header">
+              <span>チーム</span>
+              <span>予想</span>
+              <span>実際</span>
+              <span>1人あたり（予想）</span>
+              <span>1人あたり（実際）</span>
+              <span>割合</span>
+            </div>
+            <div class="ratio-row">
+              <span>日報</span>
+              <span id="exp-daily">0</span>
+              <span id="act-daily">0</span>
+              <span id="exp-per-daily">-</span>
+              <span id="act-per-daily">-</span>
+              <span id="ratio-daily">-</span>
+            </div>
+            <div class="ratio-row">
+              <span>音声</span>
+              <span id="exp-voice">0</span>
+              <span id="act-voice">0</span>
+              <span id="exp-per-voice">-</span>
+              <span id="act-per-voice">-</span>
+              <span id="ratio-voice">-</span>
+            </div>
+            <div class="ratio-row">
+              <span>コーチング</span>
+              <span id="exp-coaching">0</span>
+              <span id="act-coaching">0</span>
+              <span id="exp-per-coaching">-</span>
+              <span id="act-per-coaching">-</span>
+              <span id="ratio-coaching">-</span>
+            </div>
+          </div>
+        </div>
+        <div class="ratio-block summary">
+          <h3>全体</h3>
+          <div class="ratio-results">
+            <div class="ratio-item">
+              <span class="ratio-label">割合</span>
+              <span id="ratio-value" class="ratio-value">-</span>
+              <span class="ratio-desc">（予想に対する実際の割合）</span>
+            </div>
+            <div class="ratio-item">
+              <span class="ratio-label">差異</span>
+              <span id="ratio-diff" class="ratio-diff">-</span>
+            </div>
+            <div class="ratio-item">
+              <span class="ratio-label">判定</span>
+              <span id="ratio-judge" class="ratio-judge">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
