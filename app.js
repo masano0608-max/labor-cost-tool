@@ -156,13 +156,11 @@
     var dInc = actInputs.dailyIncentive || 0;
     var vInc = actInputs.voiceIncentive || 0;
     var cInc = actInputs.coachingIncentive || 0;
-    var totalIncentive = dInc + vInc + cInc;
 
-    set('act-daily-with-incentive', (act.dailyTotal || 0) + dInc, '円');
-    set('act-voice-with-incentive', (act.voiceTotal || 0) + vInc, '円');
-    set('act-coaching-with-incentive', (act.coachingTotal || 0) + cInc, '円');
-    set('incentive-total', totalIncentive);
-    set('actual-with-incentive-total', (act.total || 0) + totalIncentive);
+    set('act-daily-incentive-display', dInc, '円');
+    set('act-voice-incentive-display', vInc, '円');
+    set('act-coaching-incentive-display', cInc, '円');
+    set('incentive-total', dInc + vInc + cInc);
   }
 
   function setParamDiff(id, expVal, actVal, unit) {
