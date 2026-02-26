@@ -60,12 +60,18 @@
       dailyPayment: Number(el('actual-daily-payment')?.value) || 0,
       dailyMins: Number(el('actual-daily-mins')?.value) || 0,
       dailyRate: Number(el('actual-daily-rate')?.value) || 0,
+      dailyIncentive: Number(el('actual-daily-incentive')?.value) || 0,
+      dailyNote: (el('actual-daily-note')?.value) || '',
       voicePayment: Number(el('actual-voice-payment')?.value) || 0,
       voiceMins: Number(el('actual-voice-mins')?.value) || 0,
       voiceRate: Number(el('actual-voice-rate')?.value) || 0,
+      voiceIncentive: Number(el('actual-voice-incentive')?.value) || 0,
+      voiceNote: (el('actual-voice-note')?.value) || '',
       coachingPayment: Number(el('actual-coaching-payment')?.value) || 0,
       coachingCount: Number(el('actual-coaching-count')?.value) || 0,
       coachingRate: Number(el('actual-coaching-rate')?.value) || 0,
+      coachingIncentive: Number(el('actual-coaching-incentive')?.value) || 0,
+      coachingNote: (el('actual-coaching-note')?.value) || '',
     };
   }
 
@@ -146,6 +152,17 @@
     setParamDiff('diff-voice-rate', inputs.voice.rate, actInputs.voiceRate, '%');
     setParamDiff('diff-coaching-count', inputs.coaching.count, actInputs.coachingCount, '回');
     setParamDiff('diff-coaching-rate', inputs.coaching.rate, actInputs.coachingRate, '%');
+
+    var dInc = actInputs.dailyIncentive || 0;
+    var vInc = actInputs.voiceIncentive || 0;
+    var cInc = actInputs.coachingIncentive || 0;
+    var totalIncentive = dInc + vInc + cInc;
+
+    set('act-daily-with-incentive', (act.dailyTotal || 0) + dInc, '円');
+    set('act-voice-with-incentive', (act.voiceTotal || 0) + vInc, '円');
+    set('act-coaching-with-incentive', (act.coachingTotal || 0) + cInc, '円');
+    set('incentive-total', totalIncentive);
+    set('actual-with-incentive-total', (act.total || 0) + totalIncentive);
   }
 
   function setParamDiff(id, expVal, actVal, unit) {
@@ -209,7 +226,10 @@
     try {
       const inputs = getInputs();
       const actualInputs = getActualInputs();
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ inputs: inputs, actualInputs: actualInputs }));
+      var notes = ['actual-daily-note', 'actual-voice-note', 'actual-coaching-note'];
+      var noteVals = {};
+      notes.forEach(function (id) { var e = el(id); if (e) noteVals[id] = e.value; });
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ inputs: inputs, actualInputs: actualInputs, notes: noteVals }));
     } catch (e) {}
   }
 
@@ -242,6 +262,13 @@
       set('actual-coaching-payment', act.coachingPayment ?? 0);
       set('actual-coaching-count', act.coachingCount ?? 0);
       set('actual-coaching-rate', act.coachingRate ?? 0);
+      set('actual-daily-incentive', act.dailyIncentive ?? 0);
+      set('actual-voice-incentive', act.voiceIncentive ?? 0);
+      set('actual-coaching-incentive', act.coachingIncentive ?? 0);
+      var notes = data.notes || {};
+      if (notes['actual-daily-note'] != null) set('actual-daily-note', notes['actual-daily-note']);
+      if (notes['actual-voice-note'] != null) set('actual-voice-note', notes['actual-voice-note']);
+      if (notes['actual-coaching-note'] != null) set('actual-coaching-note', notes['actual-coaching-note']);
     } catch (e) {}
   }
 
@@ -278,6 +305,12 @@
     set('actual-coaching-payment', coachingPay ?? 0);
     set('actual-coaching-count', data.actualCoachingCount ?? 0);
     set('actual-coaching-rate', data.actualCoachingRate ?? 0);
+    set('actual-daily-incentive', data.actualDailyIncentive ?? 0);
+    set('actual-voice-incentive', data.actualVoiceIncentive ?? 0);
+    set('actual-coaching-incentive', data.actualCoachingIncentive ?? 0);
+    set('actual-daily-note', data.actualDailyNote ?? '');
+    set('actual-voice-note', data.actualVoiceNote ?? '');
+    set('actual-coaching-note', data.actualCoachingNote ?? '');
     saveDraft();
   }
 
@@ -308,6 +341,13 @@
       actualCoachingPayment: actualInputs.coachingPayment,
       actualCoachingCount: actualInputs.coachingCount,
       actualCoachingRate: actualInputs.coachingRate,
+      actualDailyIncentive: actualInputs.dailyIncentive,
+      actualDailyNote: actualInputs.dailyNote,
+      actualVoiceIncentive: actualInputs.voiceIncentive,
+      actualVoiceNote: actualInputs.voiceNote,
+      actualCoachingIncentive: actualInputs.coachingIncentive,
+      actualCoachingNote: actualInputs.coachingNote,
+      incentiveTotal: actualInputs.dailyIncentive + actualInputs.voiceIncentive + actualInputs.coachingIncentive,
       expTotal: exp.total,
       actTotal: act.total,
       ratio: exp.total > 0 ? (act.total / exp.total * 100).toFixed(1) : '-',
@@ -349,7 +389,15 @@
       ['コーチング 1人あたり/月', exp.coachingPer, act.coachingPer],
       ['コーチング 回数', inputs.coaching.count, actualInputs.coachingCount],
       ['コーチング 提出率(%)', inputs.coaching.rate, actualInputs.coachingRate],
+      ['日報 インセンティブ', '', actualInputs.dailyIncentive],
+      ['日報 備考', '', actualInputs.dailyNote],
+      ['音声 インセンティブ', '', actualInputs.voiceIncentive],
+      ['音声 備考', '', actualInputs.voiceNote],
+      ['コーチング インセンティブ', '', actualInputs.coachingIncentive],
+      ['コーチング 備考', '', actualInputs.coachingNote],
       ['合計人件費', exp.total, act.total],
+      ['インセンティブ合計', '', actualInputs.dailyIncentive + actualInputs.voiceIncentive + actualInputs.coachingIncentive],
+      ['インセンティブ込み合計', '', act.total + actualInputs.dailyIncentive + actualInputs.voiceIncentive + actualInputs.coachingIncentive],
       ['割合(%)', '', exp.total > 0 ? (act.total / exp.total * 100).toFixed(1) : '-'],
     ];
     const csv = '\uFEFF' + rows.map(function (r) { return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
@@ -400,11 +448,11 @@
 
     var ids = ['students', 'businessDays', 'targetMonth',
       'daily-price', 'daily-mins', 'daily-rate',
-      'actual-daily-payment', 'actual-daily-mins', 'actual-daily-rate',
+      'actual-daily-payment', 'actual-daily-mins', 'actual-daily-rate', 'actual-daily-incentive',
       'voice-price', 'voice-mins', 'voice-rate',
-      'actual-voice-payment', 'actual-voice-mins', 'actual-voice-rate',
+      'actual-voice-payment', 'actual-voice-mins', 'actual-voice-rate', 'actual-voice-incentive',
       'coaching-price', 'coaching-count', 'coaching-rate',
-      'actual-coaching-payment', 'actual-coaching-count', 'actual-coaching-rate'];
+      'actual-coaching-payment', 'actual-coaching-count', 'actual-coaching-rate', 'actual-coaching-incentive'];
     ids.forEach(function (id) {
       var e = el(id);
       if (e) e.addEventListener('input', debouncedRun);
