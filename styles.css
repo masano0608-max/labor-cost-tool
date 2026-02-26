@@ -270,6 +270,242 @@ body {
   color: #1e40af;
 }
 
+/* 比較レイアウト（予想 | 実際 | 差異） */
+.compare-section h2 {
+  border-bottom-color: #2980b9;
+}
+
+.compare-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 1rem;
+  align-items: start;
+}
+
+.compare-col {
+  border-radius: 10px;
+  padding: 1.25rem;
+  min-width: 0;
+}
+
+.compare-col-expected {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+}
+
+.compare-col-actual {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 2px solid #7dd3fc;
+}
+
+.compare-col-diff {
+  background: #fefce8;
+  border: 2px solid #fde68a;
+  min-width: 140px;
+}
+
+.compare-col-header {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid currentColor;
+}
+
+.compare-col-expected .compare-col-header {
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+.compare-col-actual .compare-col-header {
+  color: #0369a1;
+  border-color: #7dd3fc;
+}
+
+.compare-col-diff .compare-col-header {
+  color: #92400e;
+  border-color: #fde68a;
+}
+
+.compare-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.compare-inputs label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #4a5568;
+}
+
+.compare-inputs input {
+  padding: 0.55rem 0.7rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.compare-inputs input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+.compare-result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.compare-result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255,255,255,0.7);
+  border-radius: 6px;
+}
+
+.compare-result-row span {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.compare-result-row strong {
+  font-size: 1.1rem;
+  font-family: "SF Mono", "Consolas", monospace;
+  color: #1e293b;
+}
+
+.compare-col-actual .compare-result-row strong {
+  color: #0c4a6e;
+}
+
+.compare-diff-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.compare-diff-body .compare-result-row strong {
+  font-size: 1rem;
+}
+
+.compare-diff-body .compare-result-row strong.over {
+  color: #dc2626;
+}
+
+.compare-diff-body .compare-result-row strong.under {
+  color: #16a34a;
+}
+
+.compare-diff-body .compare-result-row strong.exact {
+  color: #475569;
+}
+
+/* 全体サマリー */
+.summary-section h2 {
+  border-bottom-color: #8b5cf6;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+}
+
+.summary-card {
+  padding: 1.25rem;
+  border-radius: 10px;
+}
+
+.summary-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+}
+
+.summary-expected {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+}
+
+.summary-expected .summary-card-title {
+  color: #475569;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+.summary-actual {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 2px solid #7dd3fc;
+}
+
+.summary-actual .summary-card-title {
+  color: #0369a1;
+  border-bottom: 2px solid #7dd3fc;
+}
+
+.summary-diff {
+  background: #fefce8;
+  border: 2px solid #fde68a;
+}
+
+.summary-diff .summary-card-title {
+  color: #92400e;
+  border-bottom: 2px solid #fde68a;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  font-size: 1rem;
+}
+
+.summary-row span {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.summary-row strong {
+  font-family: "SF Mono", "Consolas", monospace;
+  font-size: 1.2rem;
+}
+
+.summary-row-total {
+  border-top: 2px solid #e2e8f0;
+  margin-top: 0.25rem;
+  padding-top: 0.75rem;
+}
+
+.summary-row-total strong {
+  font-size: 1.4rem;
+}
+
+@media (max-width: 768px) {
+  .compare-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .compare-col-diff {
+    min-width: 0;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* セクション合計 */
 .section-total {
   margin-top: 1.5rem;

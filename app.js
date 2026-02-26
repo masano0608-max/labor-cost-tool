@@ -106,6 +106,23 @@
       const e = el(id);
       if (e) e.textContent = formatNum(val) + (suffix || '');
     }
+    function setDiff(id, expVal, actVal) {
+      const e = el(id);
+      if (!e) return;
+      if (!expVal && !actVal) { e.textContent = '-'; e.className = ''; return; }
+      const diff = actVal - expVal;
+      e.textContent = (diff > 0 ? '+' : '') + formatNum(diff) + '円';
+      e.className = diff > 0 ? 'over' : diff < 0 ? 'under' : 'exact';
+    }
+    function setRatio(id, expVal, actVal) {
+      const e = el(id);
+      if (!e) return;
+      if (!expVal || expVal === 0) { e.textContent = '-'; e.className = ''; return; }
+      const r = actVal / expVal;
+      e.textContent = (r * 100).toFixed(1) + '%';
+      e.className = r > 1 ? 'over' : r < 1 ? 'under' : 'exact';
+    }
+
     set('exp-daily-per', exp.dailyPer, '円');
     set('exp-daily-total', exp.dailyTotal, '円');
     set('exp-voice-per', exp.voicePer, '円');
@@ -123,6 +140,13 @@
     set('act-coaching-total', act.coachingTotal, '円');
     set('actual-per-student', act.perStudent);
     set('actual-total', act.total);
+
+    setDiff('diff-daily-per', exp.dailyPer, act.dailyPer);
+    setRatio('ratio-daily', exp.dailyTotal, act.dailyTotal);
+    setDiff('diff-voice-per', exp.voicePer, act.voicePer);
+    setRatio('ratio-voice', exp.voiceTotal, act.voiceTotal);
+    setDiff('diff-coaching-per', exp.coachingPer, act.coachingPer);
+    setRatio('ratio-coaching', exp.coachingTotal, act.coachingTotal);
   }
 
   function ratioClass(ratio) {
@@ -133,31 +157,6 @@
   }
 
   function updateRatioDisplay(exp, act) {
-    const students = exp.students || 1;
-    const expDaily = exp.dailyTotal || 0, actDaily = act.dailyTotal || 0;
-    const expVoice = exp.voiceTotal || 0, actVoice = act.voiceTotal || 0;
-    const expCoaching = exp.coachingTotal || 0, actCoaching = act.coachingTotal || 0;
-
-    function ratioOrDash(a, b) {
-      if (!b || b === 0) return '-';
-      return ((a / b) * 100).toFixed(1) + '%';
-    }
-    function setRatioRow(expEl, actEl, expPerEl, actPerEl, ratioEl, expVal, actVal, expPer, actPer) {
-      const r = expVal > 0 ? actVal / expVal : null;
-      const e1 = el(expEl), e2 = el(actEl), e3 = el(expPerEl), e4 = el(actPerEl), e5 = el(ratioEl);
-      if (e1) e1.textContent = formatNum(expVal);
-      if (e2) e2.textContent = formatNum(actVal);
-      if (e3) e3.textContent = students > 0 ? formatNum(Math.round(expVal / students)) : '-';
-      if (e4) e4.textContent = students > 0 ? formatNum(Math.round(actVal / students)) : '-';
-      if (e5) {
-        e5.textContent = ratioOrDash(actVal, expVal);
-        e5.className = ratioClass(r);
-      }
-    }
-    setRatioRow('exp-daily', 'act-daily', 'exp-per-daily', 'act-per-daily', 'ratio-daily', expDaily, actDaily, 0, 0);
-    setRatioRow('exp-voice', 'act-voice', 'exp-per-voice', 'act-per-voice', 'ratio-voice', expVoice, actVoice, 0, 0);
-    setRatioRow('exp-coaching', 'act-coaching', 'exp-per-coaching', 'act-per-coaching', 'ratio-coaching', expCoaching, actCoaching, 0, 0);
-
     const expTotal = exp.total || 0, actTotal = act.total || 0;
     const ratio = expTotal > 0 ? actTotal / expTotal : null;
     const diff = actTotal - expTotal;

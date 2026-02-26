@@ -17,34 +17,14 @@
   </header>
 
   <main class="main">
-    <!-- 計算の概要 -->
-    <section class="section overview">
-      <h2>計算の概要</h2>
-      <div id="calcOverview" class="overview-content">
-        <p class="overview-item" id="overview-daily"></p>
-        <p class="overview-item" id="overview-voice"></p>
-        <p class="overview-item" id="overview-coaching"></p>
-        <p class="overview-item overview-total">総額: 1人あたり合計 × 在籍生徒数</p>
-      </div>
-    </section>
-
     <!-- 共通入力 -->
     <section class="section">
       <h2>共通入力</h2>
       <div id="validationWrap" class="validation-wrap hidden"></div>
       <div class="input-group">
-        <label>
-          対象月
-          <input type="month" id="targetMonth" value="">
-        </label>
-        <label>
-          在籍生徒数
-          <input type="number" id="students" min="1" value="100" placeholder="必須">
-        </label>
-        <label>
-          営業日数
-          <input type="number" id="businessDays" min="1" max="31" value="30">
-        </label>
+        <label>対象月<input type="month" id="targetMonth" value=""></label>
+        <label>在籍生徒数<input type="number" id="students" min="1" value="100" placeholder="必須"></label>
+        <label>営業日数<input type="number" id="businessDays" min="1" max="31" value="30"></label>
       </div>
       <div class="save-area">
         <button type="button" id="saveBtn" class="btn-save">この月のデータを保存</button>
@@ -54,178 +34,140 @@
       </div>
     </section>
 
-    <!-- 予想 -->
-    <section class="section">
-      <h2>予想（単価・時間・提出率から計算）</h2>
-      <p class="section-desc">各チームの単価・対応時間・提出率を入力すると、1人あたりの月額人件費と全体の予想人件費を自動計算します。</p>
-      <div class="teams-grid">
-        <div class="team-card">
-          <h3>日報チーム</h3>
-          <p class="team-desc">時給 × 対応分数/日 × 営業日数 × 提出率</p>
-          <div class="team-inputs">
+    <!-- 日報チーム -->
+    <section class="section compare-section">
+      <h2>日報チーム</h2>
+      <p class="section-desc">時給 × 対応分数/日 × 営業日数 × 提出率</p>
+      <div class="compare-columns">
+        <div class="compare-col compare-col-expected">
+          <div class="compare-col-header">予想</div>
+          <div class="compare-inputs">
             <label>単価（円/時）<input type="number" id="daily-price" min="0" value="2282"></label>
             <label>対応時間（分/人/日）<input type="number" id="daily-mins" min="0" value="5"></label>
             <label>提出率（%）<input type="number" id="daily-rate" min="0" max="100" value="100"></label>
           </div>
-          <div class="team-result">
-            <span class="team-result-label">1人あたり/月</span>
-            <span class="team-result-value" id="exp-daily-per">0円</span>
-            <span class="team-result-label">全体合計</span>
-            <span class="team-result-value" id="exp-daily-total">0円</span>
+          <div class="compare-result">
+            <div class="compare-result-row"><span>1人あたり/月</span><strong id="exp-daily-per">0円</strong></div>
+            <div class="compare-result-row"><span>全体合計</span><strong id="exp-daily-total">0円</strong></div>
           </div>
         </div>
-        <div class="team-card">
-          <h3>音声チーム</h3>
-          <p class="team-desc">時給 × 対応分数/日 × 営業日数 × 提出率</p>
-          <div class="team-inputs">
+        <div class="compare-col compare-col-actual">
+          <div class="compare-col-header">実際</div>
+          <div class="compare-inputs">
+            <label>支払い総額（円）<input type="number" id="actual-daily-payment" min="0" value="0" placeholder="実際に支払った金額"></label>
+          </div>
+          <div class="compare-result">
+            <div class="compare-result-row"><span>1人あたり/月</span><strong id="act-daily-per">0円</strong></div>
+            <div class="compare-result-row"><span>全体合計</span><strong id="act-daily-total">0円</strong></div>
+          </div>
+        </div>
+        <div class="compare-col compare-col-diff">
+          <div class="compare-col-header">差異</div>
+          <div class="compare-diff-body">
+            <div class="compare-result-row"><span>1人あたり差</span><strong id="diff-daily-per">-</strong></div>
+            <div class="compare-result-row"><span>割合</span><strong id="ratio-daily">-</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 音声チーム -->
+    <section class="section compare-section">
+      <h2>音声チーム</h2>
+      <p class="section-desc">時給 × 対応分数/日 × 営業日数 × 提出率</p>
+      <div class="compare-columns">
+        <div class="compare-col compare-col-expected">
+          <div class="compare-col-header">予想</div>
+          <div class="compare-inputs">
             <label>単価（円/時）<input type="number" id="voice-price" min="0" value="1209"></label>
             <label>対応時間（分/人/日）<input type="number" id="voice-mins" min="0" value="4"></label>
             <label>提出率（%）<input type="number" id="voice-rate" min="0" max="100" value="100"></label>
           </div>
-          <div class="team-result">
-            <span class="team-result-label">1人あたり/月</span>
-            <span class="team-result-value" id="exp-voice-per">0円</span>
-            <span class="team-result-label">全体合計</span>
-            <span class="team-result-value" id="exp-voice-total">0円</span>
+          <div class="compare-result">
+            <div class="compare-result-row"><span>1人あたり/月</span><strong id="exp-voice-per">0円</strong></div>
+            <div class="compare-result-row"><span>全体合計</span><strong id="exp-voice-total">0円</strong></div>
           </div>
         </div>
-        <div class="team-card">
-          <h3>コーチングチーム</h3>
-          <p class="team-desc">単価 × 回数/月 × 提出率</p>
-          <div class="team-inputs">
+        <div class="compare-col compare-col-actual">
+          <div class="compare-col-header">実際</div>
+          <div class="compare-inputs">
+            <label>支払い総額（円）<input type="number" id="actual-voice-payment" min="0" value="0" placeholder="実際に支払った金額"></label>
+          </div>
+          <div class="compare-result">
+            <div class="compare-result-row"><span>1人あたり/月</span><strong id="act-voice-per">0円</strong></div>
+            <div class="compare-result-row"><span>全体合計</span><strong id="act-voice-total">0円</strong></div>
+          </div>
+        </div>
+        <div class="compare-col compare-col-diff">
+          <div class="compare-col-header">差異</div>
+          <div class="compare-diff-body">
+            <div class="compare-result-row"><span>1人あたり差</span><strong id="diff-voice-per">-</strong></div>
+            <div class="compare-result-row"><span>割合</span><strong id="ratio-voice">-</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- コーチングチーム -->
+    <section class="section compare-section">
+      <h2>コーチングチーム</h2>
+      <p class="section-desc">単価 × 回数/月 × 提出率</p>
+      <div class="compare-columns">
+        <div class="compare-col compare-col-expected">
+          <div class="compare-col-header">予想</div>
+          <div class="compare-inputs">
             <label>単価（円/回）<input type="number" id="coaching-price" min="0" value="1750"></label>
             <label>対応回数（回/人/月）<input type="number" id="coaching-count" min="0" value="4"></label>
             <label>提出率（%）<input type="number" id="coaching-rate" min="0" max="100" value="100"></label>
           </div>
-          <div class="team-result">
-            <span class="team-result-label">1人あたり/月</span>
-            <span class="team-result-value" id="exp-coaching-per">0円</span>
-            <span class="team-result-label">全体合計</span>
-            <span class="team-result-value" id="exp-coaching-total">0円</span>
+          <div class="compare-result">
+            <div class="compare-result-row"><span>1人あたり/月</span><strong id="exp-coaching-per">0円</strong></div>
+            <div class="compare-result-row"><span>全体合計</span><strong id="exp-coaching-total">0円</strong></div>
           </div>
         </div>
-      </div>
-      <div class="section-total">
-        <p>生徒1人あたり合計（予想）: <strong id="result-per-student">0</strong>円</p>
-        <p class="total-highlight">予想人件費 合計: <strong id="result-total">0</strong>円</p>
-      </div>
-    </section>
-
-    <!-- 実際 -->
-    <section class="section section-actual">
-      <h2>実際（支払い総額から1人あたりを逆算）</h2>
-      <p class="section-desc">各チームに実際に支払った総額を入力すると、在籍生徒数で割って1人あたりの月額人件費を逆算します。</p>
-      <div class="copy-buttons">
-        <button type="button" id="copyExpectedToActual" class="btn-copy">予想の合計額 → 実際にコピー</button>
-      </div>
-      <div class="teams-grid">
-        <div class="team-card team-card-actual">
-          <h3>日報チーム</h3>
-          <p class="team-desc">支払い総額 ÷ 在籍生徒数 = 1人あたり/月</p>
-          <div class="team-inputs">
-            <label>支払い総額（円）<input type="number" id="actual-daily-payment" min="0" value="0" placeholder="実際に支払った金額"></label>
-          </div>
-          <div class="team-result">
-            <span class="team-result-label">1人あたり/月</span>
-            <span class="team-result-value" id="act-daily-per">0円</span>
-            <span class="team-result-label">全体合計</span>
-            <span class="team-result-value" id="act-daily-total">0円</span>
-          </div>
-        </div>
-        <div class="team-card team-card-actual">
-          <h3>音声チーム</h3>
-          <p class="team-desc">支払い総額 ÷ 在籍生徒数 = 1人あたり/月</p>
-          <div class="team-inputs">
-            <label>支払い総額（円）<input type="number" id="actual-voice-payment" min="0" value="0" placeholder="実際に支払った金額"></label>
-          </div>
-          <div class="team-result">
-            <span class="team-result-label">1人あたり/月</span>
-            <span class="team-result-value" id="act-voice-per">0円</span>
-            <span class="team-result-label">全体合計</span>
-            <span class="team-result-value" id="act-voice-total">0円</span>
-          </div>
-        </div>
-        <div class="team-card team-card-actual">
-          <h3>コーチングチーム</h3>
-          <p class="team-desc">支払い総額 ÷ 在籍生徒数 = 1人あたり/月</p>
-          <div class="team-inputs">
+        <div class="compare-col compare-col-actual">
+          <div class="compare-col-header">実際</div>
+          <div class="compare-inputs">
             <label>支払い総額（円）<input type="number" id="actual-coaching-payment" min="0" value="0" placeholder="実際に支払った金額"></label>
           </div>
-          <div class="team-result">
-            <span class="team-result-label">1人あたり/月</span>
-            <span class="team-result-value" id="act-coaching-per">0円</span>
-            <span class="team-result-label">全体合計</span>
-            <span class="team-result-value" id="act-coaching-total">0円</span>
+          <div class="compare-result">
+            <div class="compare-result-row"><span>1人あたり/月</span><strong id="act-coaching-per">0円</strong></div>
+            <div class="compare-result-row"><span>全体合計</span><strong id="act-coaching-total">0円</strong></div>
           </div>
         </div>
-      </div>
-      <div class="section-total section-total-actual">
-        <p>生徒1人あたり合計（実際）: <strong id="actual-per-student">0</strong>円</p>
-        <p class="total-highlight">実際人件費 合計: <strong id="actual-total">0</strong>円</p>
+        <div class="compare-col compare-col-diff">
+          <div class="compare-col-header">差異</div>
+          <div class="compare-diff-body">
+            <div class="compare-result-row"><span>1人あたり差</span><strong id="diff-coaching-per">-</strong></div>
+            <div class="compare-result-row"><span>割合</span><strong id="ratio-coaching">-</strong></div>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- 計算結果は予想・実際セクション内に統合済み -->
-
-    <!-- 割合・逆算結果 -->
-    <section class="section ratio-section">
-      <h2>割合・逆算結果</h2>
-      <div class="ratio-results">
-        <div class="ratio-block">
-          <h3>チーム別 予想 vs 実際</h3>
-          <div class="ratio-table">
-            <div class="ratio-row header">
-              <span>チーム</span>
-              <span>予想</span>
-              <span>実際</span>
-              <span>1人あたり（予想）</span>
-              <span>1人あたり（実際）</span>
-              <span>割合</span>
-            </div>
-            <div class="ratio-row">
-              <span>日報</span>
-              <span id="exp-daily">0</span>
-              <span id="act-daily">0</span>
-              <span id="exp-per-daily">-</span>
-              <span id="act-per-daily">-</span>
-              <span id="ratio-daily">-</span>
-            </div>
-            <div class="ratio-row">
-              <span>音声</span>
-              <span id="exp-voice">0</span>
-              <span id="act-voice">0</span>
-              <span id="exp-per-voice">-</span>
-              <span id="act-per-voice">-</span>
-              <span id="ratio-voice">-</span>
-            </div>
-            <div class="ratio-row">
-              <span>コーチング</span>
-              <span id="exp-coaching">0</span>
-              <span id="act-coaching">0</span>
-              <span id="exp-per-coaching">-</span>
-              <span id="act-per-coaching">-</span>
-              <span id="ratio-coaching">-</span>
-            </div>
-          </div>
+    <!-- 全体比較サマリー -->
+    <section class="section summary-section">
+      <h2>全体サマリー（予想 vs 実際）</h2>
+      <div class="summary-grid">
+        <div class="summary-card summary-expected">
+          <div class="summary-card-title">予想</div>
+          <div class="summary-row"><span>1人あたり/月</span><strong id="result-per-student">0</strong>円</div>
+          <div class="summary-row summary-row-total"><span>合計</span><strong id="result-total">0</strong>円</div>
         </div>
-        <div class="ratio-block summary">
-          <h3>全体</h3>
-          <div class="ratio-results">
-            <div class="ratio-item">
-              <span class="ratio-label">割合</span>
-              <span id="ratio-value" class="ratio-value">-</span>
-              <span class="ratio-desc">（予想に対する実際の割合）</span>
-            </div>
-            <div class="ratio-item">
-              <span class="ratio-label">差異</span>
-              <span id="ratio-diff" class="ratio-diff">-</span>
-            </div>
-            <div class="ratio-item">
-              <span class="ratio-label">判定</span>
-              <span id="ratio-judge" class="ratio-judge">-</span>
-            </div>
-          </div>
+        <div class="summary-card summary-actual">
+          <div class="summary-card-title">実際</div>
+          <div class="summary-row"><span>1人あたり/月</span><strong id="actual-per-student">0</strong>円</div>
+          <div class="summary-row summary-row-total"><span>合計</span><strong id="actual-total">0</strong>円</div>
         </div>
+        <div class="summary-card summary-diff">
+          <div class="summary-card-title">比較</div>
+          <div class="summary-row"><span>割合</span><strong id="ratio-value" class="ratio-value">-</strong></div>
+          <div class="summary-row"><span>差異</span><strong id="ratio-diff" class="ratio-diff">-</strong></div>
+          <div class="summary-row"><span>判定</span><strong id="ratio-judge" class="ratio-judge">-</strong></div>
+        </div>
+      </div>
+      <div class="copy-buttons" style="margin-top:1rem;">
+        <button type="button" id="copyExpectedToActual" class="btn-copy">予想の合計額 → 実際にコピー</button>
       </div>
     </section>
   </main>
