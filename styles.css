@@ -14,6 +14,8 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .header {
@@ -64,6 +66,8 @@ body {
   max-width: 900px;
   margin: 0 auto;
   padding: 2rem;
+  min-height: 0;
+  overflow: visible;
 }
 
 .section {
@@ -74,6 +78,7 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   border: 1px solid rgba(0, 0, 0, 0.05);
   overflow: visible;
+  min-height: 0;
 }
 
 .section h2 {
@@ -147,11 +152,12 @@ body {
   box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
 }
 
-/* チームカード */
+/* チームカード（重なり・切れ防止） */
 .teams-grid {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  overflow: visible;
 }
 
 .team-card {
@@ -160,7 +166,13 @@ body {
   padding: 1.5rem;
   background: #fafbfc;
   width: 100%;
-  overflow-x: auto; /* 幅が足りない時は横スクロールで重なりを防止 */
+  min-width: 0;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.team-card .ea-grid {
+  overflow-x: auto;
 }
 
 .team-card:hover {
@@ -182,10 +194,10 @@ body {
   line-height: 1.5;
 }
 
-/* 予想・実際 グリッド（重なりを完全に解消） */
+/* 予想・実際 グリッド（重なり・切れ防止） */
 .ea-grid {
   display: grid;
-  grid-template-columns: minmax(120px, 2fr) minmax(90px, 1fr) minmax(90px, 1fr);
+  grid-template-columns: minmax(100px, 2fr) minmax(80px, 1fr) minmax(80px, 1fr);
   gap: 0;
   margin-top: 1rem;
   border: 2px solid #e2e8f0;
@@ -193,6 +205,7 @@ body {
   overflow: hidden;
   max-width: 100%;
   width: 100%;
+  min-width: 280px;
   box-sizing: border-box;
 }
 
@@ -480,16 +493,19 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  overflow-x: auto;
+  max-width: 100%;
 }
 
 .ratio-row {
   display: grid;
-  grid-template-columns: 90px 1fr 1fr 1fr 1fr 75px;
-  gap: 1rem;
+  grid-template-columns: minmax(70px, 90px) minmax(60px, 1fr) minmax(60px, 1fr) minmax(70px, 1fr) minmax(70px, 1fr) minmax(55px, 75px);
+  gap: 0.75rem;
   align-items: center;
   padding: 0.75rem 0.5rem;
   font-size: 0.95rem;
   border-bottom: 1px solid #f1f5f9;
+  min-width: 0;
 }
 
 .ratio-row:last-child {
@@ -982,35 +998,36 @@ body {
     display: flex;
     flex-direction: column;
     gap: 2rem;
+    overflow: visible;
   }
 
   .team-card {
     width: 100%;
+    flex-shrink: 0;
+    min-height: auto;
   }
 
   .team-card h3 {
     font-size: 1.2rem;
   }
 
-  /* 計算結果を3列（チーム別）に配置 */
+  /* 計算結果：縦積みで切れ防止（3列は狭い画面で重なるため2列に） */
   .results .results-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.75rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
   .results .result-summary,
   .results .actual-summary {
-    grid-column: 1 / -1;
     margin-top: 1rem;
   }
 
-  /* 割合セクション：チーム別テーブルと全体を横並びに */
+  /* 割合セクション：縦積みで切れ・重なり防止 */
   .ratio-section > .ratio-results {
-    display: grid;
-    grid-template-columns: 1fr 380px;
-    gap: 2rem;
-    align-items: start;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
   }
 
   .ratio-block.summary {
@@ -1018,9 +1035,13 @@ body {
   }
 
   .ratio-row {
-    grid-template-columns: 100px 1fr 1fr 1fr 1fr 80px;
+    grid-template-columns: minmax(80px, 100px) minmax(70px, 1fr) minmax(70px, 1fr) minmax(80px, 1fr) minmax(80px, 1fr) minmax(60px, 80px);
     padding: 0.85rem 0.75rem;
     font-size: 1rem;
+  }
+
+  .ea-grid {
+    min-width: 320px;
   }
 
   /* 入力欄を大きく */
