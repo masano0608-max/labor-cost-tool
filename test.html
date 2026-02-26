@@ -21,7 +21,8 @@
       <h2>計算ロジックのテスト</h2>
       <p class="section-desc">計算結果が期待値と一致するか検証します。ケースを選択して「テスト実行」をクリックしてください。</p>
       <div class="copy-buttons">
-        <button type="button" id="btnRun" class="btn-run">テスト実行</button>
+        <button type="button" id="btnRun" class="btn-run">選択ケースをテスト</button>
+        <button type="button" id="btnRunAll" class="btn-run">全テスト実行</button>
       </div>
 
       <div id="testCases">
@@ -30,11 +31,11 @@
           <div class="test-case-sub">日報: 2282円/時×5分×30日×80% / 音声: 1209円/時×4分×30日×70% / コーチング: 1750円×4回×100%</div>
         </div>
         <div class="test-case" data-index="1">
-          <strong>ケース2</strong> 生徒50人・営業日22・日報100%・音声100%・コーチング100%
+          <strong>ケース2</strong> 生徒50人・営業日22・全100%
           <div class="test-case-sub">全て100%提出の場合</div>
         </div>
         <div class="test-case" data-index="2">
-          <strong>ケース3</strong> 生徒1人・営業日31・日報50%・音声50%・コーチング50%
+          <strong>ケース3</strong> 生徒1人・営業日31・全50%
           <div class="test-case-sub">端数・少数の検証</div>
         </div>
       </div>
@@ -46,125 +47,8 @@
     </section>
   </main>
 
-  <script src="app.js"></script>
-  <script>
-    (function () {
-      'use strict';
-
-      var testCases = [
-        {
-          inputs: {
-            students: 100,
-            businessDays: 30,
-            daily: { price: 2282, mins: 5, rate: 80 },
-            voice: { price: 1209, mins: 4, rate: 70 },
-            coaching: { price: 1750, count: 4, rate: 100 },
-          },
-          expected: {
-            dailyPer: 4564,
-            voicePer: 1693,
-            coachingPer: 7000,
-            perStudent: 13257,
-            total: 1325700,
-          },
-        },
-        {
-          inputs: {
-            students: 50,
-            businessDays: 22,
-            daily: { price: 2282, mins: 5, rate: 100 },
-            voice: { price: 1209, mins: 4, rate: 100 },
-            coaching: { price: 1750, count: 4, rate: 100 },
-          },
-          expected: {
-            dailyPer: 4184,
-            voicePer: 1773,
-            coachingPer: 7000,
-            perStudent: 12957,
-            total: 647850,
-          },
-        },
-        {
-          inputs: {
-            students: 1,
-            businessDays: 31,
-            daily: { price: 2282, mins: 5, rate: 50 },
-            voice: { price: 1209, mins: 4, rate: 50 },
-            coaching: { price: 1750, count: 4, rate: 50 },
-          },
-          expected: {
-            dailyPer: 2947,
-            voicePer: 1249,
-            coachingPer: 3500,
-            perStudent: 7696,
-            total: 7696,
-          },
-        },
-      ];
-
-      function el(id) { return document.getElementById(id); }
-
-      function runTest() {
-        var selected = document.querySelector('.test-case.selected');
-        var index = selected ? parseInt(selected.getAttribute('data-index'), 10) : 0;
-        var tc = testCases[index];
-        if (!tc) return;
-
-        var result = window.LaborCostCalc.calculate(tc.inputs);
-        var exp = tc.expected;
-        var ok = true;
-        var diffs = [];
-
-        function check(name, got, want) {
-          if (got !== want) {
-            ok = false;
-            diffs.push({ name: name, got: got, want: want });
-          }
-        }
-        check('dailyPer', result.dailyPer, exp.dailyPer);
-        check('voicePer', result.voicePer, exp.voicePer);
-        check('coachingPer', result.coachingPer, exp.coachingPer);
-        check('perStudent', result.perStudent, exp.perStudent);
-        check('total', result.total, exp.total);
-
-        var resultEl = el('testResult');
-        var summaryEl = el('testResultSummary');
-        var detailEl = el('testResultDetail');
-        resultEl.classList.remove('hidden');
-        resultEl.classList.remove('pass', 'fail');
-        resultEl.classList.add(ok ? 'pass' : 'fail');
-        summaryEl.textContent = ok ? '全てのテストが通りました' : 'テストが失敗しました';
-        if (ok) {
-          detailEl.classList.add('hidden');
-        } else {
-          detailEl.classList.remove('hidden');
-          var tbl = '<table><tr><th>項目</th><th>期待値</th><th>実際</th></tr>';
-          diffs.forEach(function (d) {
-            tbl += '<tr><td>' + d.name + '</td><td>' + d.want + '</td><td>' + d.got + '</td></tr>';
-          });
-          tbl += '</table>';
-          detailEl.innerHTML = tbl;
-        }
-      }
-
-      function init() {
-        var btn = el('btnRun');
-        if (btn) btn.addEventListener('click', runTest);
-        document.querySelectorAll('.test-case').forEach(function (node) {
-          node.addEventListener('click', function () {
-            document.querySelectorAll('.test-case').forEach(function (n) { n.classList.remove('selected'); });
-            node.classList.add('selected');
-          });
-        });
-        document.querySelector('.test-case').classList.add('selected');
-      }
-
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-      } else {
-        init();
-      }
-    })();
-  </script>
+  <script src="calculator.js"></script>
+  <script src="test-cases.js"></script>
+  <script src="test.js"></script>
 </body>
 </html>

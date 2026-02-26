@@ -84,6 +84,9 @@
           daily: item.daily,
           voice: item.voice,
           coaching: item.coaching,
+          actualDailyPayment: item.actualDailyPayment,
+          actualVoicePayment: item.actualVoicePayment,
+          actualCoachingPayment: item.actualCoachingPayment,
           actualDaily: item.actualDaily,
           actualVoice: item.actualVoice,
           actualCoaching: item.actualCoaching,
@@ -95,6 +98,17 @@
       }
 
       function renderDetail(item) {
+        var dailyPay = item.actualDailyPayment ?? (item.actualDaily && typeof item.actualDaily === 'object' ? null : item.actualDaily);
+        var voicePay = item.actualVoicePayment ?? (item.actualVoice && typeof item.actualVoice === 'object' ? null : item.actualVoice);
+        var coachingPay = item.actualCoachingPayment ?? (item.actualCoaching && typeof item.actualCoaching === 'object' ? null : item.actualCoaching);
+        if (dailyPay == null && item.actualDaily && typeof item.actualDaily === 'object' && item.actualDaily.price != null) {
+          var s = item.students || 1, d = item.businessDays || 30;
+          var calcDailyVoice = function(p) { return (p.price||0)*(p.mins||0)/60*d*((p.rate||0)/100)*s; };
+          var calcCoaching = function(p) { return (p.price||0)*(p.count||0)*((p.rate||0)/100)*s; };
+          dailyPay = Math.round(calcDailyVoice(item.actualDaily));
+          voicePay = Math.round(calcDailyVoice(item.actualVoice));
+          coachingPay = Math.round(calcCoaching(item.actualCoaching || {}));
+        }
         var html = '<table class="detail-table">';
         html += '<tr><th>対象月</th><td>' + formatMonth(item.targetMonth) + '</td></tr>';
         html += '<tr><th>在籍生徒数</th><td>' + formatNum(item.students) + '</td></tr>';
@@ -102,15 +116,15 @@
         html += '<tr class="sub-header"><th colspan="2">日報チーム（予想）</th></tr>';
         html += '<tr><th>単価・分・提出率</th><td>' + (item.daily ? [item.daily.price, item.daily.mins, item.daily.rate].join(' / ') : '-') + '</td></tr>';
         html += '<tr class="sub-header"><th colspan="2">日報チーム（実際）</th></tr>';
-        html += '<tr><th>単価・分・提出率</th><td>' + (item.actualDaily ? [item.actualDaily.price, item.actualDaily.mins, item.actualDaily.rate].join(' / ') : '-') + '</td></tr>';
+        html += '<tr><th>支払額</th><td>' + formatNum(dailyPay) + '円</td></tr>';
         html += '<tr class="sub-header"><th colspan="2">音声チーム（予想）</th></tr>';
         html += '<tr><th>単価・分・提出率</th><td>' + (item.voice ? [item.voice.price, item.voice.mins, item.voice.rate].join(' / ') : '-') + '</td></tr>';
         html += '<tr class="sub-header"><th colspan="2">音声チーム（実際）</th></tr>';
-        html += '<tr><th>単価・分・提出率</th><td>' + (item.actualVoice ? [item.actualVoice.price, item.actualVoice.mins, item.actualVoice.rate].join(' / ') : '-') + '</td></tr>';
+        html += '<tr><th>支払額</th><td>' + formatNum(voicePay) + '円</td></tr>';
         html += '<tr class="sub-header"><th colspan="2">コーチングチーム（予想）</th></tr>';
         html += '<tr><th>単価・回数・提出率</th><td>' + (item.coaching ? [item.coaching.price, item.coaching.count, item.coaching.rate].join(' / ') : '-') + '</td></tr>';
         html += '<tr class="sub-header"><th colspan="2">コーチングチーム（実際）</th></tr>';
-        html += '<tr><th>単価・回数・提出率</th><td>' + (item.actualCoaching ? [item.actualCoaching.price, item.actualCoaching.count, item.actualCoaching.rate].join(' / ') : '-') + '</td></tr>';
+        html += '<tr><th>支払額</th><td>' + formatNum(coachingPay) + '円</td></tr>';
         html += '<tr><th>予想人件費</th><td>' + formatNum(item.expTotal) + '円</td></tr>';
         html += '<tr><th>実際人件費</th><td>' + formatNum(item.actTotal) + '円</td></tr>';
         html += '<tr><th>割合</th><td>' + (item.ratio || '-') + '%</td></tr>';

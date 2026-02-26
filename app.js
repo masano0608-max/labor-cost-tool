@@ -11,51 +11,20 @@
 
   function el(id) { return document.getElementById(id); }
 
-  const LaborCostCalc = {
-    STORAGE_KEY: STORAGE_KEY,
-    LOAD_KEY: LOAD_KEY,
-
-    /**
-     * 予想入力から計算（日報・音声: 単価×(分/60)×営業日×提出率、コーチング: 単価×回数×提出率）
-     */
-    calculate: function (inputs) {
-      const s = Number(inputs.students) || 0;
-      const days = Number(inputs.businessDays) || 0;
-      const d = inputs.daily || {};
-      const v = inputs.voice || {};
-      const c = inputs.coaching || {};
-
-      const dailyPer = (Number(d.price) || 0) * ((Number(d.mins) || 0) / 60) * days * ((Number(d.rate) || 0) / 100);
-      const voicePer = (Number(v.price) || 0) * ((Number(v.mins) || 0) / 60) * days * ((Number(v.rate) || 0) / 100);
-      const coachingPer = (Number(c.price) || 0) * (Number(c.count) || 0) * ((Number(c.rate) || 0) / 100);
-
-      const perStudent = dailyPer + voicePer + coachingPer;
-      const total = Math.round(perStudent * s);
-
-      return {
-        dailyPer: Math.round(dailyPer),
-        voicePer: Math.round(voicePer),
-        coachingPer: Math.round(coachingPer),
-        dailyTotal: Math.round(dailyPer * s),
-        voiceTotal: Math.round(voicePer * s),
-        coachingTotal: Math.round(coachingPer * s),
-        perStudent: Math.round(perStudent),
-        total: total,
-        students: s,
-        businessDays: days,
-      };
-    },
-
-    deleteFromHistory: function (index) {
-      const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      if (index >= 0 && index < list.length) {
-        list.splice(index, 1);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-        return true;
-      }
-      return false;
-    },
+  // calculator.js の LaborCostCalc を使用（calculate, calculateActualFromPayments）
+  const LaborCostCalc = window.LaborCostCalc || {};
+  LaborCostCalc.STORAGE_KEY = STORAGE_KEY;
+  LaborCostCalc.LOAD_KEY = LOAD_KEY;
+  LaborCostCalc.deleteFromHistory = function (index) {
+    const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    if (index >= 0 && index < list.length) {
+      list.splice(index, 1);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+      return true;
+    }
+    return false;
   };
+  window.LaborCostCalc = LaborCostCalc;
 
   function getInputs() {
     return {
@@ -80,25 +49,17 @@
     };
   }
 
+  /**
+   * 実際：支払額（円）を入力 → 在籍生徒数で割って1人あたりに逆算
+   */
   function getActualInputs() {
+    const students = Number(el('students')?.value) || 0;
     return {
-      students: Number(el('students')?.value) || 0,
+      students: students,
       businessDays: Number(el('businessDays')?.value) || 0,
-      daily: {
-        price: Number(el('actual-daily-price')?.value) || 0,
-        mins: Number(el('actual-daily-mins')?.value) || 0,
-        rate: Number(el('actual-daily-rate')?.value) || 0,
-      },
-      voice: {
-        price: Number(el('actual-voice-price')?.value) || 0,
-        mins: Number(el('actual-voice-mins')?.value) || 0,
-        rate: Number(el('actual-voice-rate')?.value) || 0,
-      },
-      coaching: {
-        price: Number(el('actual-coaching-price')?.value) || 0,
-        count: Number(el('actual-coaching-count')?.value) || 0,
-        rate: Number(el('actual-coaching-rate')?.value) || 0,
-      },
+      dailyPayment: Number(el('actual-daily-payment')?.value) || 0,
+      voicePayment: Number(el('actual-voice-payment')?.value) || 0,
+      coachingPayment: Number(el('actual-coaching-payment')?.value) || 0,
     };
   }
 
@@ -226,7 +187,7 @@
     updateOverview(inputs);
 
     const exp = LaborCostCalc.calculate(inputs);
-    const act = LaborCostCalc.calculate(actualInputs);
+    const act = LaborCostCalc.calculateActualFromPayments(actualInputs);
 
     updateResults(exp, act);
     updateRatioDisplay(exp, act);
@@ -261,15 +222,9 @@
       set('coaching-price', inp.coaching?.price);
       set('coaching-count', inp.coaching?.count);
       set('coaching-rate', inp.coaching?.rate);
-      set('actual-daily-price', act.daily?.price);
-      set('actual-daily-mins', act.daily?.mins);
-      set('actual-daily-rate', act.daily?.rate);
-      set('actual-voice-price', act.voice?.price);
-      set('actual-voice-mins', act.voice?.mins);
-      set('actual-voice-rate', act.voice?.rate);
-      set('actual-coaching-price', act.coaching?.price);
-      set('actual-coaching-count', act.coaching?.count);
-      set('actual-coaching-rate', act.coaching?.rate);
+      set('actual-daily-payment', act.dailyPayment ?? 0);
+      set('actual-voice-payment', act.voicePayment ?? 0);
+      set('actual-coaching-payment', act.coachingPayment ?? 0);
     } catch (e) {}
   }
 
@@ -288,15 +243,18 @@
     set('coaching-price', data.coaching?.price);
     set('coaching-count', data.coaching?.count);
     set('coaching-rate', data.coaching?.rate);
-    set('actual-daily-price', data.actualDaily?.price);
-    set('actual-daily-mins', data.actualDaily?.mins);
-    set('actual-daily-rate', data.actualDaily?.rate);
-    set('actual-voice-price', data.actualVoice?.price);
-    set('actual-voice-mins', data.actualVoice?.mins);
-    set('actual-voice-rate', data.actualVoice?.rate);
-    set('actual-coaching-price', data.actualCoaching?.price);
-    set('actual-coaching-count', data.actualCoaching?.count);
-    set('actual-coaching-rate', data.actualCoaching?.rate);
+    var dailyPay = data.actualDailyPayment;
+    var voicePay = data.actualVoicePayment;
+    var coachingPay = data.actualCoachingPayment;
+    if (dailyPay == null && data.actualDaily && typeof data.actualDaily === 'object') {
+      var a = LaborCostCalc.calculate({ students: data.students, businessDays: data.businessDays, daily: data.actualDaily, voice: data.actualVoice, coaching: data.actualCoaching });
+      dailyPay = a.dailyTotal;
+      voicePay = a.voiceTotal;
+      coachingPay = a.coachingTotal;
+    }
+    set('actual-daily-payment', dailyPay ?? 0);
+    set('actual-voice-payment', voicePay ?? 0);
+    set('actual-coaching-payment', coachingPay ?? 0);
     saveDraft();
   }
 
@@ -308,7 +266,7 @@
     const inputs = getInputs();
     const actualInputs = getActualInputs();
     const exp = LaborCostCalc.calculate(inputs);
-    const act = LaborCostCalc.calculate(actualInputs);
+    const act = LaborCostCalc.calculateActualFromPayments(actualInputs);
 
     const month = inputs.targetMonth || new Date().toISOString().slice(0, 7);
     const item = {
@@ -318,9 +276,9 @@
       daily: inputs.daily,
       voice: inputs.voice,
       coaching: inputs.coaching,
-      actualDaily: actualInputs.daily,
-      actualVoice: actualInputs.voice,
-      actualCoaching: actualInputs.coaching,
+      actualDailyPayment: actualInputs.dailyPayment,
+      actualVoicePayment: actualInputs.voicePayment,
+      actualCoachingPayment: actualInputs.coachingPayment,
       expTotal: exp.total,
       actTotal: act.total,
       ratio: exp.total > 0 ? (act.total / exp.total * 100).toFixed(1) : '-',
@@ -346,7 +304,7 @@
     const inputs = getInputs();
     const actualInputs = getActualInputs();
     const exp = LaborCostCalc.calculate(inputs);
-    const act = LaborCostCalc.calculate(actualInputs);
+    const act = LaborCostCalc.calculateActualFromPayments(actualInputs);
     const month = (inputs.targetMonth || '').replace('-', '年') + '月';
     const rows = [
       ['項目', '値'],
@@ -372,31 +330,11 @@
 
   function copyExpectedToActual() {
     const inputs = getInputs();
+    const exp = LaborCostCalc.calculate(inputs);
     const set = function (id, v) { var e = el(id); if (e && v !== undefined) e.value = v; };
-    set('actual-daily-price', inputs.daily?.price);
-    set('actual-daily-mins', inputs.daily?.mins);
-    set('actual-daily-rate', inputs.daily?.rate);
-    set('actual-voice-price', inputs.voice?.price);
-    set('actual-voice-mins', inputs.voice?.mins);
-    set('actual-voice-rate', inputs.voice?.rate);
-    set('actual-coaching-price', inputs.coaching?.price);
-    set('actual-coaching-count', inputs.coaching?.count);
-    set('actual-coaching-rate', inputs.coaching?.rate);
-    runCalculation();
-  }
-
-  function copyActualToExpected() {
-    const act = getActualInputs();
-    const set = function (id, v) { var e = el(id); if (e && v !== undefined) e.value = v; };
-    set('daily-price', act.daily?.price);
-    set('daily-mins', act.daily?.mins);
-    set('daily-rate', act.daily?.rate);
-    set('voice-price', act.voice?.price);
-    set('voice-mins', act.voice?.mins);
-    set('voice-rate', act.voice?.rate);
-    set('coaching-price', act.coaching?.price);
-    set('coaching-count', act.coaching?.count);
-    set('coaching-rate', act.coaching?.rate);
+    set('actual-daily-payment', exp.dailyTotal);
+    set('actual-voice-payment', exp.voiceTotal);
+    set('actual-coaching-payment', exp.coachingTotal);
     runCalculation();
   }
 
@@ -430,9 +368,9 @@
     runCalculation();
 
     var ids = ['students', 'businessDays', 'targetMonth',
-      'daily-price', 'daily-mins', 'daily-rate', 'actual-daily-price', 'actual-daily-mins', 'actual-daily-rate',
-      'voice-price', 'voice-mins', 'voice-rate', 'actual-voice-price', 'actual-voice-mins', 'actual-voice-rate',
-      'coaching-price', 'coaching-count', 'coaching-rate', 'actual-coaching-price', 'actual-coaching-count', 'actual-coaching-rate'];
+      'daily-price', 'daily-mins', 'daily-rate', 'actual-daily-payment',
+      'voice-price', 'voice-mins', 'voice-rate', 'actual-voice-payment',
+      'coaching-price', 'coaching-count', 'coaching-rate', 'actual-coaching-payment'];
     ids.forEach(function (id) {
       var e = el(id);
       if (e) e.addEventListener('input', debouncedRun);
@@ -444,8 +382,6 @@
     if (exportBtn) exportBtn.addEventListener('click', exportCsv);
     var copyExp = el('copyExpectedToActual');
     if (copyExp) copyExp.addEventListener('click', copyExpectedToActual);
-    var copyAct = el('copyActualToExpected');
-    if (copyAct) copyAct.addEventListener('click', copyActualToExpected);
   }
 
   window.LaborCostCalc = LaborCostCalc;

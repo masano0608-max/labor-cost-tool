@@ -54,92 +54,100 @@
       </div>
     </section>
 
-    <!-- 各チームの入力（予想・実際 同じ項目） -->
+    <!-- 各チームの入力 -->
     <section class="section">
-      <h2>チーム別入力（単価・対応時間・提出率）</h2>
-      <p class="section-desc">予想と実際を同じ項目で入力。両方とも入力値から計算します。「予想を実際にコピー」で入力の手間を省けます。</p>
+      <h2>チーム別入力</h2>
+      <p class="section-desc"><strong>予想</strong>：単価・対応時間・提出率から計算。<strong>実際</strong>：支払った報酬（円）を入力すると1人あたりに逆算します。「予想を実際にコピー」で予想合計を実際支払額に反映できます。</p>
       <div class="copy-buttons">
         <button type="button" id="copyExpectedToActual" class="btn-copy">予想 → 実際にコピー</button>
-        <button type="button" id="copyActualToExpected" class="btn-copy">実際 → 予想にコピー</button>
       </div>
       <div class="teams-grid">
         <div class="team-card">
           <h3>日報チーム</h3>
-          <p class="team-desc">時給 × 対応分数/日 × 営業日数 × 提出率</p>
-          <table class="ea-table">
-            <thead>
-              <tr><th></th><th>予想</th><th>実際</th></tr>
-            </thead>
-            <tbody>
-              <tr>
-                <th>単価（円/時）</th>
-                <td><input type="number" id="daily-price" min="0" value="2282"></td>
-                <td><input type="number" id="actual-daily-price" min="0" value="2282"></td>
-              </tr>
-              <tr>
-                <th>対応時間（分/人/日）</th>
-                <td><input type="number" id="daily-mins" min="0" value="5"></td>
-                <td><input type="number" id="actual-daily-mins" min="0" value="5"></td>
-              </tr>
-              <tr>
-                <th>提出率（%）</th>
-                <td><input type="number" id="daily-rate" min="0" max="100" value="100"></td>
-                <td><input type="number" id="actual-daily-rate" min="0" max="100" value="80"></td>
-              </tr>
-            </tbody>
-          </table>
+          <p class="team-desc">予想: 時給 × 対応分数/日 × 営業日数 × 提出率</p>
+          <div class="ea-grid">
+            <div class="ea-row ea-header">
+              <span class="ea-label"></span>
+              <span class="ea-col ea-col-expected">予想（計算）</span>
+              <span class="ea-col ea-col-actual">実際（支払額から逆算）</span>
+            </div>
+            <div class="ea-row ea-row-actual-span">
+              <span class="ea-label">単価（円/時）</span>
+              <span class="ea-col ea-col-expected"><input type="number" id="daily-price" min="0" value="2282"></span>
+              <span class="ea-col ea-col-actual ea-col-actual-payment">
+                <label class="actual-payment-label">支払額（円）</label>
+                <input type="number" id="actual-daily-payment" min="0" value="0" placeholder="実際に支払った金額">
+              </span>
+            </div>
+            <div class="ea-row">
+              <span class="ea-label">対応時間（分/人/日）</span>
+              <span class="ea-col ea-col-expected"><input type="number" id="daily-mins" min="0" value="5"></span>
+              <span class="ea-col ea-col-actual ea-col-actual-empty"></span>
+            </div>
+            <div class="ea-row">
+              <span class="ea-label">提出率（%）</span>
+              <span class="ea-col ea-col-expected"><input type="number" id="daily-rate" min="0" max="100" value="100"></span>
+              <span class="ea-col ea-col-actual ea-col-actual-empty"></span>
+            </div>
+          </div>
         </div>
         <div class="team-card">
           <h3>音声チーム</h3>
-          <p class="team-desc">時給 × 対応分数/日 × 営業日数 × 提出率</p>
-          <table class="ea-table">
-            <thead>
-              <tr><th></th><th>予想</th><th>実際</th></tr>
-            </thead>
-            <tbody>
-              <tr>
-                <th>単価（円/時）</th>
-                <td><input type="number" id="voice-price" min="0" value="1209"></td>
-                <td><input type="number" id="actual-voice-price" min="0" value="1209"></td>
-              </tr>
-              <tr>
-                <th>対応時間（分/人/日）</th>
-                <td><input type="number" id="voice-mins" min="0" value="4"></td>
-                <td><input type="number" id="actual-voice-mins" min="0" value="4"></td>
-              </tr>
-              <tr>
-                <th>提出率（%）</th>
-                <td><input type="number" id="voice-rate" min="0" max="100" value="100"></td>
-                <td><input type="number" id="actual-voice-rate" min="0" max="100" value="70"></td>
-              </tr>
-            </tbody>
-          </table>
+          <p class="team-desc">予想: 時給 × 対応分数/日 × 営業日数 × 提出率</p>
+          <div class="ea-grid">
+            <div class="ea-row ea-header">
+              <span class="ea-label"></span>
+              <span class="ea-col ea-col-expected">予想（計算）</span>
+              <span class="ea-col ea-col-actual">実際（支払額から逆算）</span>
+            </div>
+            <div class="ea-row ea-row-actual-span">
+              <span class="ea-label">単価（円/時）</span>
+              <span class="ea-col ea-col-expected"><input type="number" id="voice-price" min="0" value="1209"></span>
+              <span class="ea-col ea-col-actual ea-col-actual-payment">
+                <label class="actual-payment-label">支払額（円）</label>
+                <input type="number" id="actual-voice-payment" min="0" value="0" placeholder="実際に支払った金額">
+              </span>
+            </div>
+            <div class="ea-row">
+              <span class="ea-label">対応時間（分/人/日）</span>
+              <span class="ea-col ea-col-expected"><input type="number" id="voice-mins" min="0" value="4"></span>
+              <span class="ea-col ea-col-actual ea-col-actual-empty"></span>
+            </div>
+            <div class="ea-row">
+              <span class="ea-label">提出率（%）</span>
+              <span class="ea-col ea-col-expected"><input type="number" id="voice-rate" min="0" max="100" value="100"></span>
+              <span class="ea-col ea-col-actual ea-col-actual-empty"></span>
+            </div>
+          </div>
         </div>
         <div class="team-card">
           <h3>コーチングチーム</h3>
-          <p class="team-desc">単価 × 回数/月 × 提出率</p>
-          <table class="ea-table">
-            <thead>
-              <tr><th></th><th>予想</th><th>実際</th></tr>
-            </thead>
-            <tbody>
-              <tr>
-                <th>単価（円/回）</th>
-                <td><input type="number" id="coaching-price" min="0" value="1750"></td>
-                <td><input type="number" id="actual-coaching-price" min="0" value="1750"></td>
-              </tr>
-              <tr>
-                <th>対応回数（回/人/月）</th>
-                <td><input type="number" id="coaching-count" min="0" value="4"></td>
-                <td><input type="number" id="actual-coaching-count" min="0" value="4"></td>
-              </tr>
-              <tr>
-                <th>提出率（%）</th>
-                <td><input type="number" id="coaching-rate" min="0" max="100" value="100"></td>
-                <td><input type="number" id="actual-coaching-rate" min="0" max="100" value="100"></td>
-              </tr>
-            </tbody>
-          </table>
+          <p class="team-desc">予想: 単価 × 回数/月 × 提出率</p>
+          <div class="ea-grid">
+            <div class="ea-row ea-header">
+              <span class="ea-label"></span>
+              <span class="ea-col ea-col-expected">予想（計算）</span>
+              <span class="ea-col ea-col-actual">実際（支払額から逆算）</span>
+            </div>
+            <div class="ea-row ea-row-actual-span">
+              <span class="ea-label">単価（円/回）</span>
+              <span class="ea-col ea-col-expected"><input type="number" id="coaching-price" min="0" value="1750"></span>
+              <span class="ea-col ea-col-actual ea-col-actual-payment">
+                <label class="actual-payment-label">支払額（円）</label>
+                <input type="number" id="actual-coaching-payment" min="0" value="0" placeholder="実際に支払った金額">
+              </span>
+            </div>
+            <div class="ea-row">
+              <span class="ea-label">対応回数（回/人/月）</span>
+              <span class="ea-col ea-col-expected"><input type="number" id="coaching-count" min="0" value="4"></span>
+              <span class="ea-col ea-col-actual ea-col-actual-empty"></span>
+            </div>
+            <div class="ea-row">
+              <span class="ea-label">提出率（%）</span>
+              <span class="ea-col ea-col-expected"><input type="number" id="coaching-rate" min="0" max="100" value="100"></span>
+              <span class="ea-col ea-col-actual ea-col-actual-empty"></span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -252,6 +260,7 @@
     </section>
   </main>
 
+  <script src="calculator.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -30,13 +30,34 @@
 ├── index.html           # 計算画面
 ├── history.html         # 過去データ
 ├── test.html            # テスト画面
-├── app.js               # 計算・保存・UIロジック
+├── calculator.js        # 計算ロジック（テスト可能な純粋関数）
+├── test-cases.js        # テストケース定義
+├── test.js              # ブラウザ用テストランナー
+├── app.js               # UI・保存・イベント処理
 ├── styles.css           # スタイル
+├── calculator.test.js   # Node.js 用ユニットテスト
+├── package.json         # npm スクリプト（test）
 ├── firebase.json        # Firebase Hosting 設定
 ├── .firebaserc          # Firebase プロジェクトID（要編集）
 ├── DEPLOY.md            # Netlify / Firebase でデプロイ
 ├── GITHUB_SETUP.md      # GitHub セットアップ＆デプロイ手順
 └── README.md
+```
+
+## テスト
+
+### ブラウザでテスト
+
+1. `test.html` をブラウザで開く
+2. 「選択ケースをテスト」：選択したケースのみ実行
+3. 「全テスト実行」：予想計算3件 + 逆算2件の計5件を一括実行
+
+### コマンドラインでテスト（Node.js 18+）
+
+```bash
+npm test
+# または
+node --test calculator.test.js
 ```
 
 ## 使い方

@@ -1,0 +1,8 @@
+{
+  "name": "labor-cost-tool",
+  "version": "1.0.0",
+  "description": "予想 vs 実際経費 割合ツール",
+  "scripts": {
+    "test": "node --test calculator.test.js"
+  }
+}

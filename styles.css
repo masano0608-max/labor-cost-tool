@@ -160,6 +160,7 @@ body {
   padding: 1.5rem;
   background: #fafbfc;
   width: 100%;
+  overflow-x: auto; /* 幅が足りない時は横スクロールで重なりを防止 */
 }
 
 .team-card:hover {
@@ -181,71 +182,87 @@ body {
   line-height: 1.5;
 }
 
-/* 予想・実際 テーブル（枠の切れ・重なりを解消） */
-.ea-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
+/* 予想・実際 グリッド（重なりを完全に解消） */
+.ea-grid {
+  display: grid;
+  grid-template-columns: minmax(120px, 2fr) minmax(90px, 1fr) minmax(90px, 1fr);
+  gap: 0;
   margin-top: 1rem;
-}
-
-.ea-table th,
-.ea-table td {
-  padding: 0.6rem 0.75rem;
   border: 2px solid #e2e8f0;
-  vertical-align: middle;
+  border-radius: 10px;
+  overflow: hidden;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.ea-table thead th {
-  background: #f1f5f9;
+.ea-row {
+  display: contents;
+}
+
+.ea-row.ea-header .ea-label,
+.ea-row.ea-header .ea-col {
+  padding: 0.6rem 0.75rem;
   font-weight: 700;
   font-size: 0.9rem;
   color: #475569;
+  background: #f1f5f9;
 }
 
-.ea-table thead th:first-child {
-  border-top-left-radius: 8px;
-  width: 45%;
-}
-
-.ea-table thead th:nth-child(2) {
+.ea-row.ea-header .ea-col-expected {
   background: #f8fafc;
-  border-left: none;
+  border-left: 2px solid #e2e8f0;
 }
 
-.ea-table thead th:nth-child(3) {
+.ea-row.ea-header .ea-col-actual {
   background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-  border-left: none;
+  border-left: 2px solid #e2e8f0;
   border-top-right-radius: 8px;
 }
 
-.ea-table tbody th {
-  background: #fafbfc;
+.ea-row.ea-header .ea-label {
+  border-top-left-radius: 8px;
+}
+
+.ea-row:not(.ea-header) .ea-label {
+  padding: 0.6rem 0.75rem;
   font-weight: 600;
   font-size: 0.88rem;
   color: #4a5568;
-  text-align: left;
+  background: #fafbfc;
+  border-top: 2px solid #e2e8f0;
 }
 
-.ea-table tbody td {
+.ea-row:not(.ea-header) .ea-col-expected {
+  padding: 0.6rem 0.75rem;
   background: #fff;
+  border-top: 2px solid #e2e8f0;
+  border-left: 2px solid #e2e8f0;
 }
 
-.ea-table tbody td:nth-child(3) {
+.ea-row:not(.ea-header) .ea-col-actual {
+  padding: 0.6rem 0.75rem;
   background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  border-color: #93c5fd;
+  border-top: 2px solid #e2e8f0;
+  border-left: 2px solid #e2e8f0;
 }
 
-.ea-table tbody tr:last-child th {
+.ea-row:last-child .ea-label {
   border-bottom-left-radius: 8px;
 }
 
-.ea-table tbody tr:last-child td:last-child {
+.ea-row:last-child .ea-col-actual {
   border-bottom-right-radius: 8px;
 }
 
-.ea-table input {
+.ea-label,
+.ea-col {
+  min-width: 0; /* 縮小を許可して重なり防止 */
+}
+
+.ea-col input {
   width: 100%;
+  min-width: 0;
   padding: 0.5rem 0.6rem;
   border: 2px solid #e2e8f0;
   border-radius: 6px;
@@ -253,9 +270,28 @@ body {
   box-sizing: border-box;
 }
 
-.ea-table input:focus {
+.ea-col input:focus {
   outline: none;
   border-color: #3498db;
+}
+
+/* 実際：支払額入力（縦中央揃え） */
+.ea-col-actual-payment {
+  display: flex !important;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100%;
+}
+
+.ea-col-actual-payment .actual-payment-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.35rem;
+}
+
+.ea-col-actual-empty {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
 }
 
 /* 計算結果 */
@@ -914,6 +950,99 @@ body {
   font-size: 0.85rem;
   color: #718096;
   margin-top: 0.25rem;
+}
+
+/* PC向けレイアウト（見やすく最適化） */
+@media (min-width: 1024px) {
+  .main {
+    max-width: 1200px;
+    padding: 2.5rem 3rem;
+  }
+
+  .header {
+    padding: 1.5rem 3rem;
+  }
+
+  .header h1 {
+    font-size: 1.5rem;
+  }
+
+  .section {
+    padding: 2rem 2.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .section h2 {
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* チームカード：縦積みで切れ・重なりを完全に防止 */
+  .teams-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .team-card {
+    width: 100%;
+  }
+
+  .team-card h3 {
+    font-size: 1.2rem;
+  }
+
+  /* 計算結果を3列（チーム別）に配置 */
+  .results .results-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem 1.5rem;
+  }
+
+  .results .result-summary,
+  .results .actual-summary {
+    grid-column: 1 / -1;
+    margin-top: 1rem;
+  }
+
+  /* 割合セクション：チーム別テーブルと全体を横並びに */
+  .ratio-section > .ratio-results {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  .ratio-block.summary {
+    min-width: 0;
+  }
+
+  .ratio-row {
+    grid-template-columns: 100px 1fr 1fr 1fr 1fr 80px;
+    padding: 0.85rem 0.75rem;
+    font-size: 1rem;
+  }
+
+  /* 入力欄を大きく */
+  .ea-grid .ea-col input {
+    padding: 0.6rem 0.75rem;
+    font-size: 1.05rem;
+  }
+
+  .input-group input {
+    padding: 0.7rem 0.9rem;
+    font-size: 1.05rem;
+    min-width: 140px;
+  }
+}
+
+/* タブレット：縦積みのまま（切れ防止） */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .teams-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
 }
 
 /* レスポンシブ */
