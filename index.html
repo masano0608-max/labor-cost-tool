@@ -21,6 +21,31 @@
   </header>
 
   <main class="main">
+    <!-- 計算ロジック概要 -->
+    <section class="section overview-section">
+      <h2>📐 人件費の計算ロジック</h2>
+      <div class="overview-content">
+        <div class="overview-block">
+          <h3>日報チーム・音声チーム</h3>
+          <p class="overview-formula">1人あたり/月 = 単価(円/時) × (対応分数 ÷ 60) × 営業日数 × (提出率 ÷ 100)</p>
+          <p class="overview-note">例：2,282円/時 × 5分 ÷ 60 × 30日 × 100% = 5,705円/人</p>
+        </div>
+        <div class="overview-block">
+          <h3>コーチングチーム</h3>
+          <p class="overview-formula">1人あたり/月 = 単価(円/回) × 対応回数 × (提出率 ÷ 100)</p>
+          <p class="overview-note">例：1,750円 × 4回 × 100% = 7,000円/人</p>
+        </div>
+        <div class="overview-block overview-total">
+          <h3>合計</h3>
+          <p class="overview-formula">全体合計 = (日報 + 音声 + コーチングの1人あたり合計) × 在籍生徒数</p>
+        </div>
+        <div class="overview-block overview-actual">
+          <h3>実際（逆算）</h3>
+          <p class="overview-formula">1人あたり = 支払い総額 ÷ 在籍生徒数</p>
+        </div>
+      </div>
+    </section>
+
     <!-- 共通入力 -->
     <section class="section">
       <h2>共通入力</h2>
