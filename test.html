@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>予想 vs 実際経費 割合ツール - テスト画面</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="header">
+    <h1>予想 vs 実際経費 割合ツール - テスト画面</h1>
+    <nav class="nav">
+      <a href="index.html" class="nav-link">計算画面</a>
+      <a href="history.html" class="nav-link">過去データ</a>
+      <a href="test.html" class="nav-link active">テスト画面</a>
+    </nav>
+  </header>
+
+  <main class="main">
+    <section class="section">
+      <h2>テストケース</h2>
+      <p>各テストケースを選択して「テスト実行」ボタンをクリックすると、期待値と計算結果を照合します。</p>
+      <div id="testCases" class="test-cases"></div>
+      <button id="runTest" class="btn-run">テスト実行</button>
+    </section>
+
+    <section class="section">
+      <h2>検証結果</h2>
+      <div id="testResult" class="test-result"></div>
+      <div id="testDetail" class="test-result-detail"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    const TEST_CASES = [
+      {
+        name: 'ケース1: デフォルト（生徒100人、営業日30、日報80%、音声70%）',
+        inputs: {
+          students: 100,
+          businessDays: 30,
+          daily: { price: 2282, mins: 5, rate: 0.8 },
+          voice: { price: 1209, mins: 4, rate: 0.7 },
+          coaching: { price: 1750, count: 4, rate: 1 }
+        },
+        expected: {
+          dailyPer: 4564,
+          voicePer: 1693,
+          coachingPer: 7000,
+          perStudent: 13257,
+          total: 1325700
+        }
+      },
+      {
+        name: 'ケース2: 提出率100%（生徒50人）',
+        inputs: {
+          students: 50,
+          businessDays: 30,
+          daily: { price: 2282, mins: 5, rate: 1 },
+          voice: { price: 1209, mins: 4, rate: 1 },
+          coaching: { price: 1750, count: 4, rate: 1 }
+        },
+        expected: {
+          dailyPer: 5705,
+          voicePer: 2418,
+          coachingPer: 7000,
+          perStudent: 15123,
+          total: 756150
+        }
+      },
+      {
+        name: 'ケース3: 営業日20日、提出率50%',
+        inputs: {
+          students: 10,
+          businessDays: 20,
+          daily: { price: 2282, mins: 5, rate: 0.5 },
+          voice: { price: 1209, mins: 4, rate: 0.5 },
+          coaching: { price: 1750, count: 4, rate: 1 }
+        },
+        expected: {
+          dailyPer: Math.round(2282 * (5/60) * 20 * 0.5),
+          voicePer: Math.round(1209 * (4/60) * 20 * 0.5),
+          coachingPer: 7000,
+          perStudent: 0,
+          total: 0
+        }
+      }
+    ];
+
+    // ケース3の期待値を計算
+    TEST_CASES[2].expected.dailyPer = 1902;
+    TEST_CASES[2].expected.voicePer = 806;
+    TEST_CASES[2].expected.perStudent = 1902 + 806 + 7000;
+    TEST_CASES[2].expected.total = TEST_CASES[2].expected.perStudent * 10;
+
+    let selectedIndex = 0;
+
+    function renderTestCases() {
+      const container = document.getElementById('testCases');
+      container.innerHTML = TEST_CASES.map((tc, i) => `
+        <div class="test-case ${i === selectedIndex ? 'selected' : ''}" data-index="${i}">
+          <strong>${tc.name}</strong>
+          <div class="test-case-sub">
+            期待: 1人あたり${tc.expected.perStudent.toLocaleString()}円、総額${tc.expected.total.toLocaleString()}円
+          </div>
+        </div>
+      `).join('');
+
+      container.querySelectorAll('.test-case').forEach(el => {
+        el.addEventListener('click', () => {
+          selectedIndex = parseInt(el.dataset.index, 10);
+          container.querySelectorAll('.test-case').forEach(c => c.classList.remove('selected'));
+          el.classList.add('selected');
+        });
+      });
+    }
+
+    function runTest() {
+      const tc = TEST_CASES[selectedIndex];
+      const results = window.LaborCostCalc.calculate(tc.inputs);
+
+      const tolerance = 1;
+      const eq = (a, b) => Math.abs(Math.round(a) - b) <= tolerance;
+
+      const passed = eq(results.daily.per, tc.expected.dailyPer) &&
+        eq(results.voice.per, tc.expected.voicePer) &&
+        eq(results.coaching.per, tc.expected.coachingPer) &&
+        eq(results.perStudent, tc.expected.perStudent) &&
+        eq(results.total, tc.expected.total);
+
+      const resultEl = document.getElementById('testResult');
+      const detailEl = document.getElementById('testDetail');
+
+      resultEl.className = 'test-result ' + (passed ? 'pass' : 'fail');
+      resultEl.textContent = passed ? '✓ テスト合格' : '✗ テスト失敗';
+
+      detailEl.innerHTML = `
+        <table>
+          <tr><th></th><th>期待値</th><th>実際</th><th>結果</th></tr>
+          <tr><td>日報 円/人</td><td>${tc.expected.dailyPer.toLocaleString()}</td><td>${Math.round(results.daily.per).toLocaleString()}</td><td>${eq(results.daily.per, tc.expected.dailyPer) ? 'OK' : 'NG'}</td></tr>
+          <tr><td>音声 円/人</td><td>${tc.expected.voicePer.toLocaleString()}</td><td>${Math.round(results.voice.per).toLocaleString()}</td><td>${eq(results.voice.per, tc.expected.voicePer) ? 'OK' : 'NG'}</td></tr>
+          <tr><td>コーチング 円/人</td><td>${tc.expected.coachingPer.toLocaleString()}</td><td>${Math.round(results.coaching.per).toLocaleString()}</td><td>${eq(results.coaching.per, tc.expected.coachingPer) ? 'OK' : 'NG'}</td></tr>
+          <tr><td>1人あたり合計</td><td>${tc.expected.perStudent.toLocaleString()}</td><td>${Math.round(results.perStudent).toLocaleString()}</td><td>${eq(results.perStudent, tc.expected.perStudent) ? 'OK' : 'NG'}</td></tr>
+          <tr><td>総人件費</td><td>${tc.expected.total.toLocaleString()}</td><td>${Math.round(results.total).toLocaleString()}</td><td>${eq(results.total, tc.expected.total) ? 'OK' : 'NG'}</td></tr>
+        </table>
+      `;
+    }
+
+    document.getElementById('runTest').addEventListener('click', runTest);
+
+    renderTestCases();
+  </script>
+</body>
+</html>

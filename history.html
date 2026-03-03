@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>予想 vs 実際経費 - 過去データ</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="header">
+    <h1>予想 vs 実際経費 - 過去データ</h1>
+    <nav class="nav">
+      <a href="index.html" class="nav-link">計算画面</a>
+      <a href="history.html" class="nav-link active">過去データ</a>
+      <a href="test.html" class="nav-link">テスト画面</a>
+    </nav>
+  </header>
+
+  <main class="main">
+    <section class="section">
+      <h2>保存済み月別データ</h2>
+      <p class="section-desc">過去に保存した月のデータを確認できます。「読み込む」で計算画面に反映、「削除」でデータを削除できます。</p>
+      <div id="historyList" class="history-list"></div>
+      <div id="emptyMessage" class="empty-message hidden">保存されたデータはありません。計算画面でデータを入力し「保存」してください。</div>
+    </section>
+
+    <section id="detailSection" class="section detail-section hidden">
+      <h2>詳細 <span id="detailTitle"></span></h2>
+      <div id="detailContent" class="detail-content"></div>
+      <div class="detail-actions">
+        <button type="button" id="loadBtn" class="btn-load">計算画面に読み込む</button>
+        <button type="button" id="closeDetailBtn" class="btn-close">閉じる</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    function formatNum(n) {
+      return (n != null && !isNaN(n)) ? Math.round(n).toLocaleString('ja-JP') : '0';
+    }
+
+    function renderHistory() {
+      const list = window.LaborCostCalc?.getSavedHistory() || [];
+      const container = document.getElementById('historyList');
+      const emptyMsg = document.getElementById('emptyMessage');
+
+      if (list.length === 0) {
+        container.innerHTML = '';
+        emptyMsg?.classList.remove('hidden');
+        return;
+      }
+      emptyMsg?.classList.add('hidden');
+
+      container.innerHTML = list.map((d, i) => {
+        const ratio = d.results?.total > 0 ? ((d.actualResults?.total || 0) / d.results.total * 100).toFixed(1) : '-';
+        const savedDate = d.savedAt ? new Date(d.savedAt).toLocaleDateString('ja-JP') : '';
+        return `
+          <div class="history-item" data-index="${i}">
+            <div class="history-item-main">
+              <span class="history-month">${d.label}</span>
+              <span class="history-summary">
+                予想 ${formatNum(d.results?.total)}円 / 実際 ${formatNum(d.actualResults?.total)}円
+                生徒${d.inputs?.students || 0}人 割合${ratio}%
+              </span>
+              <span class="history-saved">保存: ${savedDate}</span>
+            </div>
+            <div class="history-item-actions">
+              <button type="button" class="btn-detail">詳細</button>
+              <button type="button" class="btn-load-item">読み込む</button>
+              <button type="button" class="btn-delete">削除</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      container.querySelectorAll('.history-item').forEach((el) => {
+        const idx = parseInt(el.dataset.index, 10);
+        const data = list[idx];
+        el.querySelector('.btn-detail')?.addEventListener('click', () => showDetail(data));
+        el.querySelector('.btn-load-item')?.addEventListener('click', () => loadData(data));
+        el.querySelector('.btn-delete')?.addEventListener('click', () => deleteData(idx));
+      });
+    }
+
+    let currentDetailData = null;
+
+    function showDetail(data) {
+      const section = document.getElementById('detailSection');
+      const titleEl = document.getElementById('detailTitle');
+      const contentEl = document.getElementById('detailContent');
+
+      if (!section || !titleEl || !contentEl) return;
+
+      currentDetailData = data;
+      titleEl.textContent = data.label || '';
+      const r = data.results || {};
+      const ar = data.actualResults || {};
+      const ratio = r.total > 0 ? ((ar.total || 0) / r.total * 100).toFixed(1) : '-';
+      const diff = (ar.total || 0) - (r.total || 0);
+      contentEl.innerHTML = `
+        <table class="detail-table">
+          <tr><th>在籍生徒数</th><td>${data.inputs?.students || 0}人</td></tr>
+          <tr><th>営業日数</th><td>${data.inputs?.businessDays || 0}日</td></tr>
+          <tr><th colspan="2" class="sub-header">予想</th></tr>
+          <tr><th>日報</th><td>${formatNum(r.daily?.per)}円/人 合計${formatNum(r.daily?.total)}円</td></tr>
+          <tr><th>音声</th><td>${formatNum(r.voice?.per)}円/人 合計${formatNum(r.voice?.total)}円</td></tr>
+          <tr><th>コーチング</th><td>${formatNum(r.coaching?.per)}円/人 合計${formatNum(r.coaching?.total)}円</td></tr>
+          <tr><th>予想人件費</th><td>${formatNum(r.total)}円</td></tr>
+          <tr><th colspan="2" class="sub-header">実際</th></tr>
+          <tr><th>日報</th><td>${formatNum(ar.daily?.per)}円/人 合計${formatNum(ar.daily?.total)}円</td></tr>
+          <tr><th>音声</th><td>${formatNum(ar.voice?.per)}円/人 合計${formatNum(ar.voice?.total)}円</td></tr>
+          <tr><th>コーチング</th><td>${formatNum(ar.coaching?.per)}円/人 合計${formatNum(ar.coaching?.total)}円</td></tr>
+          <tr><th>実際人件費</th><td>${formatNum(ar.total)}円</td></tr>
+          <tr><th>割合</th><td>${ratio}%</td></tr>
+          <tr><th>差異</th><td>${diff >= 0 ? '+' : ''}${formatNum(diff)}円</td></tr>
+        </table>
+      `;
+      section.classList.remove('hidden');
+    }
+
+    function loadData(data) {
+      sessionStorage.setItem(window.LaborCostCalc?.LOAD_KEY || 'labor-cost-load', JSON.stringify(data));
+      window.location.href = 'index.html';
+    }
+
+    function deleteData(index) {
+      const list = window.LaborCostCalc?.getSavedHistory() || [];
+      const item = list[index];
+      if (!item) return;
+      if (!confirm(`「${item.label}」のデータを削除しますか？この操作は取り消せません。`)) return;
+      window.LaborCostCalc?.deleteFromHistory(index);
+      if (currentDetailData && item.label === currentDetailData.label) {
+        currentDetailData = null;
+        document.getElementById('detailSection')?.classList.add('hidden');
+      }
+      renderHistory();
+    }
+
+    document.getElementById('loadBtn')?.addEventListener('click', () => {
+      if (currentDetailData) loadData(currentDetailData);
+    });
+
+    document.getElementById('closeDetailBtn')?.addEventListener('click', () => {
+      document.getElementById('detailSection')?.classList.add('hidden');
+    });
+
+    renderHistory();
+  </script>
+</body>
+</html>
