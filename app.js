@@ -134,9 +134,12 @@ function getInputs() {
   return { students, businessDays, daily, voice, coaching };
 }
 
-// 実際の支払い総額を取得
-function getActualTotalPayment() {
-  return parseInt(document.getElementById('actual-total-payment')?.value, 10) || 0;
+// 実際のチーム別支払い額を取得
+function getActualPayments() {
+  const daily = parseInt(document.getElementById('actual-daily-payment')?.value, 10) || 0;
+  const voice = parseInt(document.getElementById('actual-voice-payment')?.value, 10) || 0;
+  const coaching = parseInt(document.getElementById('actual-coaching-payment')?.value, 10) || 0;
+  return { daily, voice, coaching, total: daily + voice + coaching };
 }
 
 // 計算実行
@@ -205,6 +208,12 @@ function updateResults(results, actualResults) {
   if (el('result-total')) el('result-total').textContent = formatNumber(results.total) + '円';
 
   if (actualResults) {
+    if (el('result-act-daily-per')) el('result-act-daily-per').textContent = formatNumber(actualResults.daily.per);
+    if (el('result-act-daily-total')) el('result-act-daily-total').textContent = formatNumber(actualResults.daily.total);
+    if (el('result-act-voice-per')) el('result-act-voice-per').textContent = formatNumber(actualResults.voice.per);
+    if (el('result-act-voice-total')) el('result-act-voice-total').textContent = formatNumber(actualResults.voice.total);
+    if (el('result-act-coaching-per')) el('result-act-coaching-per').textContent = formatNumber(actualResults.coaching.per);
+    if (el('result-act-coaching-total')) el('result-act-coaching-total').textContent = formatNumber(actualResults.coaching.total);
     if (el('actual-per-student')) el('actual-per-student').textContent = formatNumber(actualResults.perStudent) + '円';
     if (el('actual-total')) el('actual-total').textContent = formatNumber(actualResults.total) + '円';
 
@@ -228,16 +237,33 @@ function updateResults(results, actualResults) {
 function updateRatioDisplay(results, actualResults, inputs) {
   if (!actualResults) return;
 
-  // チーム別予想のみ表示
+  // チーム別予想 vs 実際
   [
-    { key: 'daily', exp: results.daily },
-    { key: 'voice', exp: results.voice },
-    { key: 'coaching', exp: results.coaching }
-  ].forEach(({ key, exp }) => {
+    { key: 'daily', exp: results.daily, act: actualResults.daily },
+    { key: 'voice', exp: results.voice, act: actualResults.voice },
+    { key: 'coaching', exp: results.coaching, act: actualResults.coaching }
+  ].forEach(({ key, exp, act }) => {
     const expEl = document.getElementById('exp-' + key);
+    const actEl = document.getElementById('act-' + key);
     const expPerEl = document.getElementById('exp-per-' + key);
+    const actPerEl = document.getElementById('act-per-' + key);
+    const ratioEl = document.getElementById('ratio-' + key);
+
     if (expEl) expEl.textContent = formatNumber(exp.total) + '円';
+    if (actEl) actEl.textContent = formatNumber(act.total) + '円';
     if (expPerEl) expPerEl.textContent = formatNumber(exp.per) + '円';
+    if (actPerEl) actPerEl.textContent = formatNumber(act.per) + '円';
+
+    if (ratioEl) {
+      if (exp.total > 0) {
+        const r = (act.total / exp.total) * 100;
+        ratioEl.textContent = r.toFixed(1) + '%';
+        ratioEl.className = r > 100 ? 'over' : r < 100 ? 'under' : 'exact';
+      } else {
+        ratioEl.textContent = '-';
+        ratioEl.className = '';
+      }
+    }
   });
 
   // 全体の割合・差異
@@ -322,11 +348,14 @@ function runCalculation() {
     total: grandTotal
   };
 
-  // 実際: 支払い総額 ÷ 生徒数
-  const totalPayment = getActualTotalPayment();
+  // 実際: チーム別支払い額 ÷ 生徒数
+  const payments = getActualPayments();
   const actualResults = {
-    total: totalPayment,
-    perStudent: students > 0 ? totalPayment / students : 0
+    daily: { total: payments.daily, per: students > 0 ? payments.daily / students : 0 },
+    voice: { total: payments.voice, per: students > 0 ? payments.voice / students : 0 },
+    coaching: { total: payments.coaching, per: students > 0 ? payments.coaching / students : 0 },
+    total: payments.total,
+    perStudent: students > 0 ? payments.total / students : 0
   };
 
   renderInstructorDisplay('daily');
@@ -399,10 +428,13 @@ function exportToCsv() {
     perStudent: students > 0 ? (dailyPredTotal + voicePredTotal + coachingTotal) / students : 0,
     total: dailyPredTotal + voicePredTotal + coachingTotal
   };
-  const totalPayment = getActualTotalPayment();
+  const payments = getActualPayments();
   const actualResults = {
-    total: totalPayment,
-    perStudent: students > 0 ? totalPayment / students : 0
+    daily: { total: payments.daily, per: students > 0 ? payments.daily / students : 0 },
+    voice: { total: payments.voice, per: students > 0 ? payments.voice / students : 0 },
+    coaching: { total: payments.coaching, per: students > 0 ? payments.coaching / students : 0 },
+    total: payments.total,
+    perStudent: students > 0 ? payments.total / students : 0
   };
 
   const monthEl = document.getElementById('targetMonth');
@@ -424,18 +456,17 @@ function exportToCsv() {
     [''],
     ['▼ 日報チーム（予想・講師別内訳）', '', ''],
     ...dailyInstructors.map(i => [`　${i.name || '名前未入力'} ${i.hours}h × ${formatNumber(i.rate)}円/h`, formatNumber(i.hours * i.rate) + '円', '']),
-    ['日報チーム 予想合計', formatNumber(results.daily.total) + '円', ''],
+    ['日報チーム 予想合計', formatNumber(results.daily.total) + '円', formatNumber(actualResults.daily.total) + '円'],
     [''],
     ['▼ 音声チーム（予想・講師別内訳）', '', ''],
     ...voiceInstructors.map(i => [`　${i.name || '名前未入力'} ${i.hours}h × ${formatNumber(i.rate)}円/h`, formatNumber(i.hours * i.rate) + '円', '']),
-    ['音声チーム 予想合計', formatNumber(results.voice.total) + '円', ''],
+    ['音声チーム 予想合計', formatNumber(results.voice.total) + '円', formatNumber(actualResults.voice.total) + '円'],
     [''],
-    ['コーチングチーム 円/人', formatNumber(results.coaching.per), ''],
-    ['コーチングチーム 合計', formatNumber(results.coaching.total), ''],
+    ['コーチングチーム 円/人', formatNumber(results.coaching.per), formatNumber(actualResults.coaching.per)],
+    ['コーチングチーム 合計', formatNumber(results.coaching.total), formatNumber(actualResults.coaching.total)],
     [''],
-    ['支払い総額（実際）', '', formatNumber(actualResults.total) + '円'],
     ['生徒1人あたり合計', formatNumber(results.perStudent) + '円', formatNumber(actualResults.perStudent) + '円'],
-    ['人件費総額（予想）', formatNumber(results.total) + '円', ''],
+    ['人件費総額', formatNumber(results.total) + '円', formatNumber(actualResults.total) + '円'],
     [''],
     ['割合', ratioEl?.textContent || '-', ''],
     ['差異', diffEl?.textContent || '-', ''],
@@ -466,11 +497,14 @@ function saveCurrentData() {
   const [year, month] = monthVal.split('-').map(Number);
 
   const inputs = getInputs();
-  const totalPayment = getActualTotalPayment();
+  const payments = getActualPayments();
   const students = inputs.students || 0;
   const actualResults = {
-    total: totalPayment,
-    perStudent: students > 0 ? totalPayment / students : 0
+    daily: { total: payments.daily, per: students > 0 ? payments.daily / students : 0 },
+    voice: { total: payments.voice, per: students > 0 ? payments.voice / students : 0 },
+    coaching: { total: payments.coaching, per: students > 0 ? payments.coaching / students : 0 },
+    total: payments.total,
+    perStudent: students > 0 ? payments.total / students : 0
   };
 
   const data = {
@@ -478,7 +512,7 @@ function saveCurrentData() {
     month,
     label: `${year}年${month}月`,
     inputs,
-    totalPayment,
+    payments,
     actualResults,
     dailyInstructors: getInstructors('daily'),
     voiceInstructors: getInstructors('voice')
@@ -570,7 +604,9 @@ function loadSavedData(data) {
     ['coaching-price', inputs.coaching?.price],
     ['coaching-count', inputs.coaching?.count],
     ['coaching-rate', Math.round((inputs.coaching?.rate || 0) * 100)],
-    ['actual-total-payment', data.totalPayment ?? 0]
+    ['actual-daily-payment', data.payments?.daily ?? 0],
+    ['actual-voice-payment', data.payments?.voice ?? 0],
+    ['actual-coaching-payment', data.payments?.coaching ?? 0]
   ];
   ids.forEach(([id, val]) => {
     const el = document.getElementById(id);
@@ -608,13 +644,13 @@ function tryLoadFromSession() {
 // 下書きを保存
 function saveDraft() {
   const inputs = getInputs();
-  const totalPayment = getActualTotalPayment();
+  const payments = getActualPayments();
   const monthEl = document.getElementById('targetMonth');
   try {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({
       targetMonth: monthEl?.value || '',
       inputs,
-      totalPayment,
+      payments,
       dailyInstructors: getInstructors('daily'),
       voiceInstructors: getInstructors('voice'),
       savedAt: Date.now()
@@ -637,7 +673,9 @@ function loadDraft() {
       ['coaching-price', inputs.coaching?.price],
       ['coaching-count', inputs.coaching?.count],
       ['coaching-rate', Math.round((inputs.coaching?.rate || 0) * 100)],
-      ['actual-total-payment', d.totalPayment ?? 0]
+      ['actual-daily-payment', d.payments?.daily ?? 0],
+      ['actual-voice-payment', d.payments?.voice ?? 0],
+      ['actual-coaching-payment', d.payments?.coaching ?? 0]
     ];
     ids.forEach(([id, val]) => {
       const el = document.getElementById(id);
@@ -680,15 +718,18 @@ function init() {
       const monthVal = monthEl?.value || getCurrentMonthStr();
       const [year, month] = monthVal.split('-').map(Number);
       const inputs = getInputs();
-      const totalPayment = getActualTotalPayment();
+      const payments = getActualPayments();
       const students = inputs.students || 0;
       const actualResults = {
-        total: totalPayment,
-        perStudent: students > 0 ? totalPayment / students : 0
+        daily: { total: payments.daily, per: students > 0 ? payments.daily / students : 0 },
+        voice: { total: payments.voice, per: students > 0 ? payments.voice / students : 0 },
+        coaching: { total: payments.coaching, per: students > 0 ? payments.coaching / students : 0 },
+        total: payments.total,
+        perStudent: students > 0 ? payments.total / students : 0
       };
       const data = {
         year, month, label: `${year}年${month}月`,
-        inputs, totalPayment, actualResults,
+        inputs, payments, actualResults,
         dailyInstructors: getInstructors('daily'),
         voiceInstructors: getInstructors('voice')
       };
@@ -725,7 +766,7 @@ function init() {
   const ids = [
     'students', 'businessDays', 'targetMonth',
     'coaching-price', 'coaching-count', 'coaching-rate',
-    'actual-total-payment'
+    'actual-daily-payment', 'actual-voice-payment', 'actual-coaching-payment'
   ];
   ids.forEach(id => {
     const el = document.getElementById(id);
@@ -749,7 +790,7 @@ window.LaborCostCalc = {
   STORAGE_KEY,
   LOAD_KEY,
   getInputs,
-  getActualTotalPayment,
+  getActualPayments,
   calculate,
   formatNumber,
   runCalculation,

@@ -147,11 +147,19 @@
     <!-- 実際入力 -->
     <section class="section">
       <h2>実際の支払い</h2>
-      <p class="section-desc">実際に支払った総額を入力してください。1人あたり人件費 ＝ 支払い総額 ÷ 生徒数 で算出します。</p>
+      <p class="section-desc">各チームの実際の支払い額を入力してください。1人あたり人件費 ＝ チーム支払い額 ÷ 生徒数 で算出します。</p>
       <div class="input-group">
         <label>
-          支払い総額（円）
-          <input type="number" id="actual-total-payment" min="0" value="0" placeholder="実際の支払い総額">
+          日報チーム 支払い額（円）
+          <input type="number" id="actual-daily-payment" min="0" value="0" placeholder="日報チームの支払い総額">
+        </label>
+        <label>
+          音声チーム 支払い額（円）
+          <input type="number" id="actual-voice-payment" min="0" value="0" placeholder="音声チームの支払い総額">
+        </label>
+        <label>
+          コーチングチーム 支払い額（円）
+          <input type="number" id="actual-coaching-payment" min="0" value="0" placeholder="コーチングチームの支払い総額">
         </label>
       </div>
     </section>
@@ -165,15 +173,30 @@
           <span class="result-value">予想 <span id="result-daily-per">0</span>円/人</span>
           <span class="result-total">合計 <span id="result-daily-total">0</span>円</span>
         </div>
+        <div class="result-item actual-row">
+          <span class="result-label"></span>
+          <span class="result-value">実際 <span id="result-act-daily-per">0</span>円/人</span>
+          <span class="result-total">合計 <span id="result-act-daily-total">0</span>円</span>
+        </div>
         <div class="result-item">
           <span class="result-label">音声チーム</span>
           <span class="result-value">予想 <span id="result-voice-per">0</span>円/人</span>
           <span class="result-total">合計 <span id="result-voice-total">0</span>円</span>
         </div>
+        <div class="result-item actual-row">
+          <span class="result-label"></span>
+          <span class="result-value">実際 <span id="result-act-voice-per">0</span>円/人</span>
+          <span class="result-total">合計 <span id="result-act-voice-total">0</span>円</span>
+        </div>
         <div class="result-item">
           <span class="result-label">コーチングチーム</span>
           <span class="result-value">予想 <span id="result-coaching-per">0</span>円/人</span>
           <span class="result-total">合計 <span id="result-coaching-total">0</span>円</span>
+        </div>
+        <div class="result-item actual-row">
+          <span class="result-label"></span>
+          <span class="result-value">実際 <span id="result-act-coaching-per">0</span>円/人</span>
+          <span class="result-total">合計 <span id="result-act-coaching-total">0</span>円</span>
         </div>
       </div>
       <div class="summary-table-wrap">
@@ -209,27 +232,39 @@
       <h2>割合・逆算結果</h2>
       <div class="ratio-results">
         <div class="ratio-block">
-          <h3>チーム別 予想内訳</h3>
+          <h3>チーム別 予想 vs 実際</h3>
           <div class="ratio-table">
             <div class="ratio-row header">
               <span>チーム</span>
-              <span>予想合計</span>
+              <span>予想</span>
+              <span>実際</span>
               <span>1人あたり（予想）</span>
+              <span>1人あたり（実際）</span>
+              <span>割合</span>
             </div>
             <div class="ratio-row">
               <span>日報</span>
               <span id="exp-daily">0</span>
+              <span id="act-daily">0</span>
               <span id="exp-per-daily">-</span>
+              <span id="act-per-daily">-</span>
+              <span id="ratio-daily">-</span>
             </div>
             <div class="ratio-row">
               <span>音声</span>
               <span id="exp-voice">0</span>
+              <span id="act-voice">0</span>
               <span id="exp-per-voice">-</span>
+              <span id="act-per-voice">-</span>
+              <span id="ratio-voice">-</span>
             </div>
             <div class="ratio-row">
               <span>コーチング</span>
               <span id="exp-coaching">0</span>
+              <span id="act-coaching">0</span>
               <span id="exp-per-coaching">-</span>
+              <span id="act-per-coaching">-</span>
+              <span id="ratio-coaching">-</span>
             </div>
           </div>
         </div>
