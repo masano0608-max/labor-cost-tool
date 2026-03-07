@@ -5,6 +5,100 @@
 const STORAGE_KEY = 'labor-cost-history';
 const DRAFT_KEY = 'labor-cost-draft';
 const LOAD_KEY = 'labor-cost-load';
+const SHEETS_URL_KEY = 'labor-cost-sheets-url';
+const AUTO_SEND_SHEETS_KEY = 'labor-cost-auto-send-sheets';
+
+// ── 講師リスト管理 ──────────────────────────────
+
+function getInstructors(team) {
+  const container = document.getElementById(team + '-instructors');
+  if (!container) return [];
+  return Array.from(container.querySelectorAll('.instructor-row')).map(row => ({
+    name: row.querySelector('.instructor-name')?.value?.trim() || '',
+    hours: parseFloat(row.querySelector('.instructor-hours')?.value) || 0,
+    rate: parseInt(row.querySelector('.instructor-rate')?.value, 10) || 0
+  }));
+}
+
+function calcInstructorTotal(instructors) {
+  return instructors.reduce((sum, i) => sum + i.hours * i.rate, 0);
+}
+
+function buildInstructorFormulaLines(instructors) {
+  return instructors
+    .filter(i => i.hours > 0 || i.rate > 0)
+    .map(i => {
+      const name = i.name || '（名前未入力）';
+      return `${name} ${i.hours}h × ${formatNumber(i.rate)}円 ＝ ${formatNumber(i.hours * i.rate)}円`;
+    });
+}
+
+function renderInstructorDisplay(team) {
+  const instructors = getInstructors(team);
+  const total = calcInstructorTotal(instructors);
+  const formulaEl = document.getElementById(team + '-formula');
+  const totalEl = document.getElementById(team + '-instructor-total');
+
+  if (formulaEl) {
+    const lines = buildInstructorFormulaLines(instructors);
+    formulaEl.innerHTML = lines.length === 0
+      ? '<span class="formula-empty">（講師を追加してください）</span>'
+      : lines.map(l => `<div class="formula-line">${l}</div>`).join('');
+  }
+  if (totalEl) totalEl.textContent = formatNumber(total);
+}
+
+function createInstructorRow(team, data) {
+  const row = document.createElement('div');
+  row.className = 'instructor-row';
+  const name = data?.name ?? '';
+  const hours = data?.hours != null && data.hours !== '' ? data.hours : '';
+  const rate = data?.rate != null && data.rate !== '' ? data.rate : '';
+  const sub = (parseFloat(hours) || 0) * (parseInt(rate, 10) || 0);
+
+  row.innerHTML = `
+    <input type="text" class="instructor-name" placeholder="講師名" value="${name}">
+    <input type="number" class="instructor-hours" placeholder="0" min="0" step="0.5" value="${hours}">
+    <span class="instructor-x">h ×</span>
+    <input type="number" class="instructor-rate" placeholder="0" min="0" value="${rate}">
+    <span class="instructor-unit">円/h＝</span>
+    <span class="instructor-subtotal">${formatNumber(sub)}円</span>
+    <button type="button" class="btn-remove-instructor" title="削除">✕</button>
+  `;
+
+  const updateSub = () => {
+    const h = parseFloat(row.querySelector('.instructor-hours').value) || 0;
+    const r = parseInt(row.querySelector('.instructor-rate').value, 10) || 0;
+    row.querySelector('.instructor-subtotal').textContent = formatNumber(h * r) + '円';
+  };
+
+  row.querySelector('.btn-remove-instructor').addEventListener('click', () => {
+    row.remove();
+    renderInstructorDisplay(team);
+    runCalculation();
+    saveDraft();
+  });
+
+  row.querySelectorAll('input').forEach(input => {
+    input.addEventListener('input', () => {
+      updateSub();
+      renderInstructorDisplay(team);
+      runCalculation();
+      saveDraft();
+    });
+  });
+
+  return row;
+}
+
+function addInstructor(team, data) {
+  const container = document.getElementById(team + '-instructors');
+  if (!container) return;
+  container.appendChild(createInstructorRow(team, data));
+  renderInstructorDisplay(team);
+}
+
+// ── ここまで講師リスト管理 ───────────────────────
 
 // 数値をカンマ区切りでフォーマット
 function formatNumber(n) {
@@ -86,10 +180,8 @@ function calculate(inputs) {
 }
 
 // 計算ロジックの動的解説を更新
-function updateOverview(inputs, results) {
-  const { businessDays, daily, voice, coaching } = inputs;
-  const dailyRate = Math.round(daily.rate * 100);
-  const voiceRate = Math.round(voice.rate * 100);
+function updateOverview(inputs, results, dailyInstructors, voiceInstructors) {
+  const { coaching } = inputs;
   const coachingRate = Math.round(coaching.rate * 100);
 
   const dailyEl = document.getElementById('overview-daily');
@@ -97,10 +189,20 @@ function updateOverview(inputs, results) {
   const coachingEl = document.getElementById('overview-coaching');
 
   if (dailyEl) {
-    dailyEl.textContent = `日報: ${formatNumber(daily.price)} × (${daily.mins}分÷60) × ${businessDays}日 × ${dailyRate}% = ${formatNumber(results.daily.per)}円/人`;
+    if (!dailyInstructors || dailyInstructors.length === 0) {
+      dailyEl.textContent = '日報チーム: 講師を追加してください';
+    } else {
+      const parts = dailyInstructors.map(i => `${i.name || '?'} ${i.hours}h×${formatNumber(i.rate)}円`).join(' ＋ ');
+      dailyEl.textContent = `日報: ${parts} ＝ ${formatNumber(results.daily.total)}円`;
+    }
   }
   if (voiceEl) {
-    voiceEl.textContent = `音声: ${formatNumber(voice.price)} × (${voice.mins}分÷60) × ${businessDays}日 × ${voiceRate}% = ${formatNumber(results.voice.per)}円/人`;
+    if (!voiceInstructors || voiceInstructors.length === 0) {
+      voiceEl.textContent = '音声チーム: 講師を追加してください';
+    } else {
+      const parts = voiceInstructors.map(i => `${i.name || '?'} ${i.hours}h×${formatNumber(i.rate)}円`).join(' ＋ ');
+      voiceEl.textContent = `音声: ${parts} ＝ ${formatNumber(results.voice.total)}円`;
+    }
   }
   if (coachingEl) {
     coachingEl.textContent = `コーチング: ${formatNumber(coaching.price)} × ${coaching.count}回 × ${coachingRate}% = ${formatNumber(results.coaching.per)}円/人`;
@@ -116,8 +218,8 @@ function updateResults(results, actualResults) {
   if (el('result-voice-total')) el('result-voice-total').textContent = formatNumber(results.voice.total);
   if (el('result-coaching-per')) el('result-coaching-per').textContent = formatNumber(results.coaching.per);
   if (el('result-coaching-total')) el('result-coaching-total').textContent = formatNumber(results.coaching.total);
-  if (el('result-per-student')) el('result-per-student').textContent = formatNumber(results.perStudent);
-  if (el('result-total')) el('result-total').textContent = formatNumber(results.total);
+  if (el('result-per-student')) el('result-per-student').textContent = formatNumber(results.perStudent) + '円';
+  if (el('result-total')) el('result-total').textContent = formatNumber(results.total) + '円';
 
   if (actualResults) {
     if (el('result-act-daily-per')) el('result-act-daily-per').textContent = formatNumber(actualResults.daily.per);
@@ -126,8 +228,22 @@ function updateResults(results, actualResults) {
     if (el('result-act-voice-total')) el('result-act-voice-total').textContent = formatNumber(actualResults.voice.total);
     if (el('result-act-coaching-per')) el('result-act-coaching-per').textContent = formatNumber(actualResults.coaching.per);
     if (el('result-act-coaching-total')) el('result-act-coaching-total').textContent = formatNumber(actualResults.coaching.total);
-    if (el('actual-per-student')) el('actual-per-student').textContent = formatNumber(actualResults.perStudent);
-    if (el('actual-total')) el('actual-total').textContent = formatNumber(actualResults.total);
+    if (el('actual-per-student')) el('actual-per-student').textContent = formatNumber(actualResults.perStudent) + '円';
+    if (el('actual-total')) el('actual-total').textContent = formatNumber(actualResults.total) + '円';
+
+    var diffTotal = actualResults.total - results.total;
+    var diffPer = actualResults.perStudent - results.perStudent;
+    if (el('summary-diff-total')) {
+      el('summary-diff-total').textContent = (diffTotal >= 0 ? '+' : '') + formatNumber(diffTotal) + '円';
+      el('summary-diff-total').className = 'summary-diff' + (diffTotal > 0 ? ' over' : diffTotal < 0 ? ' under' : ' exact');
+    }
+    if (el('summary-diff-per')) {
+      el('summary-diff-per').textContent = (diffPer >= 0 ? '+' : '') + formatNumber(diffPer) + '円';
+      el('summary-diff-per').className = 'summary-diff' + (diffPer > 0 ? ' over' : diffPer < 0 ? ' under' : ' exact');
+    }
+  } else {
+    if (el('summary-diff-total')) { el('summary-diff-total').textContent = '-'; el('summary-diff-total').className = 'summary-diff'; }
+    if (el('summary-diff-per')) { el('summary-diff-per').textContent = '-'; el('summary-diff-per').className = 'summary-diff'; }
   }
 }
 
@@ -224,10 +340,37 @@ function runCalculation() {
 
   updateValidationMessages(inputs);
 
-  const results = calculate(inputs);
+  // 予想: 日報・音声は講師別稼働から計算
+  const dailyInstructors = getInstructors('daily');
+  const voiceInstructors = getInstructors('voice');
+  const dailyPredTotal = calcInstructorTotal(dailyInstructors);
+  const voicePredTotal = calcInstructorTotal(voiceInstructors);
+
+  const { students, coaching } = inputs;
+  const coachingPer = coaching.price * coaching.count * coaching.rate;
+  const coachingTotal = coachingPer * students;
+  const grandTotal = dailyPredTotal + voicePredTotal + coachingTotal;
+
+  const results = {
+    daily: {
+      per: students > 0 ? dailyPredTotal / students : 0,
+      total: dailyPredTotal
+    },
+    voice: {
+      per: students > 0 ? voicePredTotal / students : 0,
+      total: voicePredTotal
+    },
+    coaching: { per: coachingPer, total: coachingTotal },
+    perStudent: students > 0 ? grandTotal / students : 0,
+    total: grandTotal
+  };
+
+  // 実際: 従来ロジック
   const actualResults = calculate(actualInputs);
 
-  updateOverview(inputs, results);
+  renderInstructorDisplay('daily');
+  renderInstructorDisplay('voice');
+  updateOverview(inputs, results, dailyInstructors, voiceInstructors);
   updateResults(results, actualResults);
   updateRatioDisplay(results, actualResults, inputs);
 }
@@ -321,7 +464,22 @@ function deleteFromHistory(index) {
 function exportToCsv() {
   const inputs = getInputs();
   const actualInputs = getActualInputs();
-  const results = calculate(inputs);
+  const dailyInstructors = getInstructors('daily');
+  const voiceInstructors = getInstructors('voice');
+
+  // 予想計算（講師リスト方式）
+  const dailyPredTotal = calcInstructorTotal(dailyInstructors);
+  const voicePredTotal = calcInstructorTotal(voiceInstructors);
+  const { students, coaching } = inputs;
+  const coachingPer = coaching.price * coaching.count * coaching.rate;
+  const coachingTotal = coachingPer * students;
+  const results = {
+    daily: { per: students > 0 ? dailyPredTotal / students : 0, total: dailyPredTotal },
+    voice: { per: students > 0 ? voicePredTotal / students : 0, total: voicePredTotal },
+    coaching: { per: coachingPer, total: coachingTotal },
+    perStudent: students > 0 ? (dailyPredTotal + voicePredTotal + coachingTotal) / students : 0,
+    total: dailyPredTotal + voicePredTotal + coachingTotal
+  };
   const actualResults = calculate(actualInputs);
 
   const monthEl = document.getElementById('targetMonth');
@@ -341,10 +499,14 @@ function exportToCsv() {
     ['在籍生徒数', inputs.students + '人', ''],
     ['営業日数', inputs.businessDays + '日', ''],
     [''],
-    ['日報チーム 円/人', formatNumber(results.daily.per), formatNumber(actualResults.daily.per)],
-    ['日報チーム 合計', formatNumber(results.daily.total), formatNumber(actualResults.daily.total)],
-    ['音声チーム 円/人', formatNumber(results.voice.per), formatNumber(actualResults.voice.per)],
-    ['音声チーム 合計', formatNumber(results.voice.total), formatNumber(actualResults.voice.total)],
+    ['▼ 日報チーム（予想・講師別内訳）', '', ''],
+    ...dailyInstructors.map(i => [`　${i.name || '名前未入力'} ${i.hours}h × ${formatNumber(i.rate)}円/h`, formatNumber(i.hours * i.rate) + '円', '']),
+    ['日報チーム 予想合計', formatNumber(results.daily.total) + '円', formatNumber(actualResults.daily.total) + '円'],
+    [''],
+    ['▼ 音声チーム（予想・講師別内訳）', '', ''],
+    ...voiceInstructors.map(i => [`　${i.name || '名前未入力'} ${i.hours}h × ${formatNumber(i.rate)}円/h`, formatNumber(i.hours * i.rate) + '円', '']),
+    ['音声チーム 予想合計', formatNumber(results.voice.total) + '円', formatNumber(actualResults.voice.total) + '円'],
+    [''],
     ['コーチングチーム 円/人', formatNumber(results.coaching.per), formatNumber(actualResults.coaching.per)],
     ['コーチングチーム 合計', formatNumber(results.coaching.total), formatNumber(actualResults.coaching.total)],
     [''],
@@ -391,7 +553,9 @@ function saveCurrentData() {
     inputs,
     actualInputs,
     results,
-    actualResults
+    actualResults,
+    dailyInstructors: getInstructors('daily'),
+    voiceInstructors: getInstructors('voice')
   };
   saveToHistory(data);
 
@@ -401,6 +565,74 @@ function saveCurrentData() {
     msgEl.className = 'save-message success';
     setTimeout(() => { msgEl.textContent = ''; msgEl.className = 'save-message'; }, 3000);
   }
+
+  if (localStorage.getItem(AUTO_SEND_SHEETS_KEY) === 'true') {
+    sendToSheets(data).catch(() => {});
+  }
+}
+
+// スプレッドシートへデータ送信（フォームPOSTでCORSを回避）
+function sendToSheets(data) {
+  const url = localStorage.getItem(SHEETS_URL_KEY);
+  if (!url || !url.trim()) {
+    showSaveMessage('スプレッドシートURLを設定してください', 'error');
+    return Promise.reject(new Error('URL未設定'));
+  }
+
+  const btn = document.getElementById('sendToSheetsBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '送信中...';
+  }
+
+  return new Promise((resolve, reject) => {
+    const iframe = document.createElement('iframe');
+    iframe.name = 'sheets-post-target';
+    iframe.style.display = 'none';
+    iframe.onload = function () {
+      iframe.remove();
+      if (btn) { btn.disabled = false; btn.textContent = 'スプレッドシートに送信'; }
+      showSaveMessage('スプレッドシートに送信しました', 'success');
+      resolve();
+    };
+    iframe.onerror = function () {
+      iframe.remove();
+      if (btn) { btn.disabled = false; btn.textContent = 'スプレッドシートに送信'; }
+      showSaveMessage('送信に失敗しました', 'error');
+      reject(new Error('送信失敗'));
+    };
+    document.body.appendChild(iframe);
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = url.trim();
+    form.target = 'sheets-post-target';
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'payload';
+    input.value = JSON.stringify(data);
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+    form.remove();
+
+    setTimeout(() => {
+      if (btn && btn.disabled) {
+        btn.disabled = false;
+        btn.textContent = 'スプレッドシートに送信';
+      }
+      iframe.remove();
+      resolve();
+    }, 3000);
+  });
+}
+
+function showSaveMessage(text, type) {
+  const msgEl = document.getElementById('saveMessage');
+  if (!msgEl) return;
+  msgEl.textContent = text;
+  msgEl.className = 'save-message ' + (type || '');
+  setTimeout(() => { msgEl.textContent = ''; msgEl.className = 'save-message'; }, 4000);
 }
 
 // 保存データをフォームに読み込み
@@ -409,12 +641,6 @@ function loadSavedData(data) {
   const ids = [
     ['students', inputs.students],
     ['businessDays', inputs.businessDays],
-    ['daily-price', inputs.daily?.price],
-    ['daily-mins', inputs.daily?.mins],
-    ['daily-rate', Math.round((inputs.daily?.rate || 0) * 100)],
-    ['voice-price', inputs.voice?.price],
-    ['voice-mins', inputs.voice?.mins],
-    ['voice-rate', Math.round((inputs.voice?.rate || 0) * 100)],
     ['coaching-price', inputs.coaching?.price],
     ['coaching-count', inputs.coaching?.count],
     ['coaching-rate', Math.round((inputs.coaching?.rate || 0) * 100)],
@@ -436,6 +662,13 @@ function loadSavedData(data) {
   if (monthEl && data.year && data.month) {
     monthEl.value = `${data.year}-${String(data.month).padStart(2, '0')}`;
   }
+
+  // 講師リスト復元
+  const dailyCont = document.getElementById('daily-instructors');
+  if (dailyCont) { dailyCont.innerHTML = ''; (data.dailyInstructors || []).forEach(i => addInstructor('daily', i)); }
+  const voiceCont = document.getElementById('voice-instructors');
+  if (voiceCont) { voiceCont.innerHTML = ''; (data.voiceInstructors || []).forEach(i => addInstructor('voice', i)); }
+
   runCalculation();
 }
 
@@ -464,6 +697,8 @@ function saveDraft() {
       targetMonth: monthEl?.value || '',
       inputs,
       actualInputs,
+      dailyInstructors: getInstructors('daily'),
+      voiceInstructors: getInstructors('voice'),
       savedAt: Date.now()
     }));
   } catch {}
@@ -481,12 +716,6 @@ function loadDraft() {
     const ids = [
       ['students', inputs.students],
       ['businessDays', inputs.businessDays],
-      ['daily-price', inputs.daily?.price],
-      ['daily-mins', inputs.daily?.mins],
-      ['daily-rate', Math.round((inputs.daily?.rate || 0) * 100)],
-      ['voice-price', inputs.voice?.price],
-      ['voice-mins', inputs.voice?.mins],
-      ['voice-rate', Math.round((inputs.voice?.rate || 0) * 100)],
       ['coaching-price', inputs.coaching?.price],
       ['coaching-count', inputs.coaching?.count],
       ['coaching-rate', Math.round((inputs.coaching?.rate || 0) * 100)],
@@ -506,6 +735,12 @@ function loadDraft() {
     });
     const monthEl = document.getElementById('targetMonth');
     if (monthEl && targetMonth) monthEl.value = targetMonth;
+
+    // 講師リスト復元
+    const dailyCont = document.getElementById('daily-instructors');
+    if (dailyCont) { dailyCont.innerHTML = ''; (d.dailyInstructors || []).forEach(i => addInstructor('daily', i)); }
+    const voiceCont = document.getElementById('voice-instructors');
+    if (voiceCont) { voiceCont.innerHTML = ''; (d.voiceInstructors || []).forEach(i => addInstructor('voice', i)); }
   } catch {}
 }
 
@@ -513,6 +748,11 @@ function loadDraft() {
 function init() {
   const monthEl = document.getElementById('targetMonth');
   if (monthEl && !monthEl.value) monthEl.value = getCurrentMonthStr();
+
+  // 講師追加ボタン
+  document.querySelectorAll('[data-add-instructor]').forEach(btn => {
+    btn.addEventListener('click', () => addInstructor(btn.dataset.addInstructor));
+  });
 
   const loadedFromSession = tryLoadFromSession();
   if (!loadedFromSession) loadDraft();
@@ -522,6 +762,41 @@ function init() {
 
   const exportBtn = document.getElementById('exportCsvBtn');
   if (exportBtn) exportBtn.addEventListener('click', exportToCsv);
+
+  const sheetsBtn = document.getElementById('sendToSheetsBtn');
+  if (sheetsBtn) {
+    sheetsBtn.addEventListener('click', () => {
+      const monthEl = document.getElementById('targetMonth');
+      const monthVal = monthEl?.value || getCurrentMonthStr();
+      const [year, month] = monthVal.split('-').map(Number);
+      const inputs = getInputs();
+      const actualInputs = getActualInputs();
+      const results = calculate(inputs);
+      const actualResults = calculate(actualInputs);
+      const data = {
+        year, month, label: `${year}年${month}月`,
+        inputs, actualInputs, results, actualResults,
+        dailyInstructors: getInstructors('daily'),
+        voiceInstructors: getInstructors('voice')
+      };
+      sendToSheets(data);
+    });
+  }
+
+  const sheetsUrlEl = document.getElementById('sheetsUrl');
+  if (sheetsUrlEl) sheetsUrlEl.value = localStorage.getItem(SHEETS_URL_KEY) || '';
+  const autoSendEl = document.getElementById('autoSendToSheets');
+  if (autoSendEl) autoSendEl.checked = localStorage.getItem(AUTO_SEND_SHEETS_KEY) === 'true';
+  const saveSheetsUrlBtn = document.getElementById('saveSheetsUrlBtn');
+  if (saveSheetsUrlBtn) {
+    saveSheetsUrlBtn.addEventListener('click', () => {
+      const url = document.getElementById('sheetsUrl')?.value?.trim() || '';
+      const auto = document.getElementById('autoSendToSheets')?.checked || false;
+      localStorage.setItem(SHEETS_URL_KEY, url);
+      localStorage.setItem(AUTO_SEND_SHEETS_KEY, auto ? 'true' : 'false');
+      showSaveMessage('設定を保存しました', 'success');
+    });
+  }
 
   const copyExp = document.getElementById('copyExpectedToActual');
   if (copyExp) copyExp.addEventListener('click', copyExpectedToActual);
@@ -536,8 +811,6 @@ function init() {
 
   const ids = [
     'students', 'businessDays', 'targetMonth',
-    'daily-price', 'daily-mins', 'daily-rate',
-    'voice-price', 'voice-mins', 'voice-rate',
     'coaching-price', 'coaching-count', 'coaching-rate',
     'actual-daily-price', 'actual-daily-mins', 'actual-daily-rate',
     'actual-voice-price', 'actual-voice-mins', 'actual-voice-rate',
@@ -574,6 +847,7 @@ window.LaborCostCalc = {
   saveToHistory,
   deleteFromHistory,
   loadSavedData,
+  sendToSheets,
   setInputs(values) {
     const map = {
       students: 'students',

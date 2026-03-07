@@ -257,38 +257,70 @@ body {
   font-size: 0.92rem;
 }
 
-.result-summary {
-  padding: 1.25rem 0;
+.summary-table-wrap {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
   border-top: 3px solid #3498db;
-  margin-top: 0.5rem;
 }
 
-.result-summary .per-student,
-.result-summary .total-cost {
-  margin: 0.6rem 0;
+.summary-table {
+  width: 100%;
+  max-width: 520px;
+  border-collapse: collapse;
+  font-size: 1rem;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
 }
 
-.per-student {
-  font-size: 1.15rem;
-  margin: 0.5rem 0;
-  color: #4a5568;
+.summary-table th,
+.summary-table td {
+  padding: 0.875rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.per-student strong {
-  font-size: 1.3rem;
-  color: #2c3e50;
-}
-
-.total-cost {
-  font-size: 1.35rem;
-  margin: 0.5rem 0;
-  color: #2c3e50;
+.summary-table thead th {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   font-weight: 600;
+  color: #475569;
+  font-size: 0.9rem;
 }
 
-.total-cost strong {
-  font-size: 1.5rem;
-  letter-spacing: 0.02em;
+.summary-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.summary-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.summary-table .summary-label {
+  font-weight: 500;
+  color: #334155;
+}
+
+.summary-table td:not(.summary-label) {
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-table .summary-diff {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.summary-table .summary-diff.over {
+  color: #dc2626;
+}
+
+.summary-table .summary-diff.under {
+  color: #16a34a;
+}
+
+.summary-table .summary-diff.exact {
+  color: #64748b;
 }
 
 /* 予想モード切替 */
@@ -363,23 +395,6 @@ body {
   padding-top: 1rem;
   border-top: 1px solid #e0e0e0;
   font-size: 1.1rem;
-}
-
-.actual-summary {
-  margin-top: 1.25rem;
-  padding: 1.25rem 1rem;
-  border-top: 3px solid #0ea5e9;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  border-radius: 10px;
-}
-
-.actual-summary .per-student,
-.actual-summary .total-cost {
-  color: #0c4a6e;
-}
-
-.actual-summary .total-cost strong {
-  color: #0369a1;
 }
 
 .result-item.actual-row {
@@ -596,6 +611,83 @@ body {
   transform: translateY(-1px);
 }
 
+.btn-sheets {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-sheets:hover {
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+  transform: translateY(-1px);
+}
+
+.btn-sheets:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.sheets-config {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.sheets-config summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #334155;
+}
+
+.sheets-desc {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin: 0.75rem 0;
+}
+
+.sheets-config label {
+  display: block;
+  margin: 0.5rem 0;
+}
+
+.sheets-config input[type="url"] {
+  width: 100%;
+  max-width: 480px;
+  padding: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.btn-small {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  background: #64748b;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}
+
+.btn-small:hover {
+  background: #475569;
+}
+
 .save-message {
   font-size: 0.95rem;
   font-weight: 500;
@@ -603,6 +695,10 @@ body {
 
 .save-message.success {
   color: #16a34a;
+}
+
+.save-message.error {
+  color: #dc2626;
 }
 
 /* コピーボタン */
@@ -875,6 +971,144 @@ body {
   margin-top: 0.25rem;
 }
 
+/* 講師リスト */
+.teams-grid {
+  grid-template-columns: 1fr;
+}
+
+.instructor-list-header {
+  display: grid;
+  grid-template-columns: 100px 80px 28px 80px 40px 90px 28px;
+  gap: 4px;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  padding: 0 2px 4px;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 6px;
+}
+
+.instructor-row {
+  display: grid;
+  grid-template-columns: 100px 80px 28px 80px 40px 90px 28px;
+  gap: 4px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.instructor-name {
+  padding: 0.38rem 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  width: 100%;
+}
+
+.instructor-hours,
+.instructor-rate {
+  padding: 0.38rem 0.4rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  text-align: right;
+  width: 100%;
+}
+
+.instructor-name:focus,
+.instructor-hours:focus,
+.instructor-rate:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.15);
+}
+
+.instructor-x,
+.instructor-unit {
+  font-size: 0.8rem;
+  color: #718096;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.instructor-subtotal {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #2d3748;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.btn-add-instructor {
+  margin-top: 8px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.85rem;
+  background: #fff;
+  color: #2980b9;
+  border: 2px solid #3498db;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-add-instructor:hover {
+  background: #eff6ff;
+}
+
+.btn-remove-instructor {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  font-size: 0.85rem;
+  background: none;
+  color: #e53e3e;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.btn-remove-instructor:hover {
+  background: #fee2e2;
+}
+
+.instructor-result {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+}
+
+.instructor-formula {
+  font-size: 0.85rem;
+  color: #374151;
+  line-height: 1.75;
+}
+
+.formula-line {
+  padding: 1px 0;
+}
+
+.formula-empty {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.instructor-total-line {
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: 1px solid #7dd3fc;
+  font-size: 0.95rem;
+  color: #0369a1;
+  font-weight: 500;
+}
+
+.instructor-total-line strong {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
 /* レスポンシブ */
 @media (max-width: 600px) {
   .main {
@@ -925,7 +1159,8 @@ body {
     display: none !important;
   }
 
-  .save-area {
+  .save-area,
+  .sheets-config {
     display: none !important;
   }
 

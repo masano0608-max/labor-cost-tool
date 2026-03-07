@@ -24,7 +24,7 @@
         <p class="overview-item" id="overview-daily"></p>
         <p class="overview-item" id="overview-voice"></p>
         <p class="overview-item" id="overview-coaching"></p>
-        <p class="overview-item overview-total">総額: 1人あたり合計 × 在籍生徒数</p>
+        <p class="overview-item overview-total">総額: 日報合計 ＋ 音声合計 ＋ コーチング合計（×生徒数）</p>
       </div>
     </section>
 
@@ -49,30 +49,51 @@
       <div class="save-area">
         <button type="button" id="saveBtn" class="btn-save">この月のデータを保存</button>
         <button type="button" id="exportCsvBtn" class="btn-export">CSVダウンロード</button>
+        <button type="button" id="sendToSheetsBtn" class="btn-sheets">スプレッドシートに送信</button>
         <button type="button" onclick="window.print()" class="btn-print">印刷</button>
         <span id="saveMessage" class="save-message"></span>
       </div>
+      <details class="sheets-config">
+        <summary>スプレッドシート連携の設定</summary>
+        <p class="sheets-desc">Google Apps Script でデプロイしたWebアプリのURLを入力してください。<a href="SETUP_SHEETS.md" target="_blank" rel="noopener">セットアップ手順</a></p>
+        <label>
+          GAS Web App URL
+          <input type="url" id="sheetsUrl" placeholder="https://script.google.com/macros/s/.../exec">
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="autoSendToSheets"> 保存時にスプレッドシートへ自動送信
+        </label>
+        <button type="button" id="saveSheetsUrlBtn" class="btn-small">URLを保存</button>
+      </details>
     </section>
 
-    <!-- 各チームの入力（予想・実際 同じ項目） -->
+    <!-- 各チームの入力 -->
     <section class="section">
-      <h2>チーム別入力（単価・対応時間・提出率）</h2>
-      <p class="section-desc">予想と実際を同じ項目で入力。両方とも入力値から計算します。「予想を実際にコピー」で入力の手間を省けます。</p>
-      <div class="copy-buttons">
-        <button type="button" id="copyExpectedToActual" class="btn-copy">予想 → 実際にコピー</button>
-        <button type="button" id="copyActualToExpected" class="btn-copy">実際 → 予想にコピー</button>
-      </div>
+      <h2>チーム別入力</h2>
+      <p class="section-desc">日報・音声チームの予想は、シフト表の講師リストをもとに各講師の稼働時間×時給を入力してください。実際はコーチング同様に従来方式で入力します。</p>
       <div class="teams-grid">
+
+        <!-- 日報チーム -->
         <div class="team-card">
           <h3>日報チーム</h3>
-          <p class="team-desc">時給 × 対応分数/日 × 営業日数 × 提出率</p>
           <div class="expected-actual-row">
             <div class="ea-block">
-              <span class="ea-label">予想</span>
-              <div class="input-group">
-                <label>単価（円/時）<input type="number" id="daily-price" min="0" value="2282"></label>
-                <label>対応時間（分/人/日）<input type="number" id="daily-mins" min="0" value="5"></label>
-                <label>提出率（%）<input type="number" id="daily-rate" min="0" max="100" value="100"></label>
+              <span class="ea-label">予想（講師別稼働）</span>
+              <p class="team-desc" style="margin-bottom:8px;">次月シフト表の【新】講師リストを参照</p>
+              <div class="instructor-list-header">
+                <span>講師名</span>
+                <span>稼働時間(h)</span>
+                <span></span>
+                <span>時給(円/h)</span>
+                <span></span>
+                <span>小計</span>
+                <span></span>
+              </div>
+              <div id="daily-instructors"></div>
+              <button type="button" class="btn-add-instructor" data-add-instructor="daily">＋ 講師を追加</button>
+              <div class="instructor-result">
+                <div class="instructor-formula" id="daily-formula"><span class="formula-empty">（講師を追加してください）</span></div>
+                <div class="instructor-total-line">予測合計: <strong id="daily-instructor-total">0</strong>円</div>
               </div>
             </div>
             <div class="ea-block actual">
@@ -85,16 +106,28 @@
             </div>
           </div>
         </div>
+
+        <!-- 音声チーム -->
         <div class="team-card">
           <h3>音声チーム</h3>
-          <p class="team-desc">時給 × 対応分数/日 × 営業日数 × 提出率</p>
           <div class="expected-actual-row">
             <div class="ea-block">
-              <span class="ea-label">予想</span>
-              <div class="input-group">
-                <label>単価（円/時）<input type="number" id="voice-price" min="0" value="1209"></label>
-                <label>対応時間（分/人/日）<input type="number" id="voice-mins" min="0" value="4"></label>
-                <label>提出率（%）<input type="number" id="voice-rate" min="0" max="100" value="100"></label>
+              <span class="ea-label">予想（講師別稼働）</span>
+              <p class="team-desc" style="margin-bottom:8px;">次月シフト表の【新】講師リストを参照</p>
+              <div class="instructor-list-header">
+                <span>講師名</span>
+                <span>稼働時間(h)</span>
+                <span></span>
+                <span>時給(円/h)</span>
+                <span></span>
+                <span>小計</span>
+                <span></span>
+              </div>
+              <div id="voice-instructors"></div>
+              <button type="button" class="btn-add-instructor" data-add-instructor="voice">＋ 講師を追加</button>
+              <div class="instructor-result">
+                <div class="instructor-formula" id="voice-formula"><span class="formula-empty">（講師を追加してください）</span></div>
+                <div class="instructor-total-line">予測合計: <strong id="voice-instructor-total">0</strong>円</div>
               </div>
             </div>
             <div class="ea-block actual">
@@ -107,6 +140,8 @@
             </div>
           </div>
         </div>
+
+        <!-- コーチングチーム（変更なし） -->
         <div class="team-card">
           <h3>コーチングチーム</h3>
           <p class="team-desc">単価 × 回数/月 × 提出率</p>
@@ -129,6 +164,7 @@
             </div>
           </div>
         </div>
+
       </div>
     </section>
 
@@ -167,13 +203,31 @@
           <span class="result-total">合計 <span id="result-act-coaching-total">0</span>円</span>
         </div>
       </div>
-      <div class="result-summary">
-        <p class="per-student">生徒1人あたり合計（予想）: <strong id="result-per-student">0</strong>円</p>
-        <p class="total-cost">予想人件費: <strong id="result-total">0</strong>円</p>
-      </div>
-      <div class="actual-summary">
-        <p class="per-student">生徒1人あたり合計（実際）: <strong id="actual-per-student">0</strong>円</p>
-        <p class="total-cost">実際人件費: <strong id="actual-total">0</strong>円</p>
+      <div class="summary-table-wrap">
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th>項目</th>
+              <th>予想</th>
+              <th>実際</th>
+              <th>差額（実際−予想）</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="summary-label">支払い総額</td>
+              <td id="result-total">0</td>
+              <td id="actual-total">0</td>
+              <td id="summary-diff-total" class="summary-diff">-</td>
+            </tr>
+            <tr>
+              <td class="summary-label">1人あたり/月</td>
+              <td id="result-per-student">0</td>
+              <td id="actual-per-student">0</td>
+              <td id="summary-diff-per" class="summary-diff">-</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
