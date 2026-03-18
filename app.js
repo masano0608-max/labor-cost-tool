@@ -9,6 +9,9 @@ const SHEETS_URL_KEY = 'labor-cost-sheets-url';
 const AUTO_SEND_SHEETS_KEY = 'labor-cost-auto-send-sheets';
 const AUTO_LOAD_INSTRUCTORS_KEY = 'labor-cost-auto-load-instructors';
 
+// デフォルトのGAS URL（設定不要で自動連携）
+const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbwWoFO8LXGWyelmtvD6KKoQRzrP9H0qdIgsKMtSGNgGsGYZiwNnueKbsf8YyEHoOpau/exec';
+
 // ── 講師リスト管理 ──────────────────────────────
 
 function getInstructors(team) {
@@ -534,8 +537,8 @@ function saveCurrentData() {
 
 // スプレッドシートへデータ送信（フォームPOSTでCORSを回避）
 function sendToSheets(data) {
-  const url = localStorage.getItem(SHEETS_URL_KEY);
-  if (!url || !url.trim()) {
+  const url = (localStorage.getItem(SHEETS_URL_KEY) || '').trim() || DEFAULT_GAS_URL;
+  if (!url) {
     showSaveMessage('スプレッドシートURLを設定してください', 'error');
     return Promise.reject(new Error('URL未設定'));
   }
@@ -696,7 +699,7 @@ function loadDraft() {
 // ── GAS 自動連携（講師データ取得） ──────────────────────
 
 async function loadInstructorsFromGas(silent) {
-  const url = (localStorage.getItem(SHEETS_URL_KEY) || '').trim();
+  const url = (localStorage.getItem(SHEETS_URL_KEY) || '').trim() || DEFAULT_GAS_URL;
   if (!url) {
     if (!silent) showImportMessage('importSheetMessage', 'GAS URLが設定されていません', 'error');
     return;
@@ -949,10 +952,8 @@ function init() {
     fetchBtn.addEventListener('click', () => loadInstructorsFromGas(false));
   }
 
-  // ページ読み込み時に自動取得
-  if (localStorage.getItem(AUTO_LOAD_INSTRUCTORS_KEY) === 'true') {
-    loadInstructorsFromGas(true);
-  }
+  // ページ読み込み時に自動取得（常に実行）
+  loadInstructorsFromGas(true);
 
   const copyExp = document.getElementById('copyExpectedToActual');
   if (copyExp) copyExp.addEventListener('click', copyExpectedToActual);
