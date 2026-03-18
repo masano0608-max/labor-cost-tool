@@ -16,6 +16,7 @@
 - 入力値の自動保存（リロードしても復元）
 - 月別データの保存・読み込み
 - CSVエクスポート
+- **Googleスプレッドシート連携**（計算結果を自動反映）→ [SETUP_SHEETS.md](./SETUP_SHEETS.md)
 - 印刷対応
 
 ## 計算式
@@ -32,6 +33,9 @@
 ├── test.html            # テスト画面
 ├── app.js               # 計算・保存・UIロジック
 ├── styles.css           # スタイル
+├── google-apps-script/
+│   └── Code.gs          # スプレッドシート連携用GAS（コピーして使用）
+├── SETUP_SHEETS.md      # スプレッドシート連携のセットアップ手順
 ├── firebase.json        # Firebase Hosting 設定
 ├── .firebaserc          # Firebase プロジェクトID（要編集）
 ├── DEPLOY.md            # デプロイ手順（やさしい解説）

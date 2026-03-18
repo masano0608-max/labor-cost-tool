@@ -7,6 +7,7 @@ const DRAFT_KEY = 'labor-cost-draft';
 const LOAD_KEY = 'labor-cost-load';
 const SHEETS_URL_KEY = 'labor-cost-sheets-url';
 const AUTO_SEND_SHEETS_KEY = 'labor-cost-auto-send-sheets';
+const AUTO_LOAD_INSTRUCTORS_KEY = 'labor-cost-auto-load-instructors';
 
 // ── 講師リスト管理 ──────────────────────────────
 
@@ -692,6 +693,192 @@ function loadDraft() {
   } catch {}
 }
 
+// ── GAS 自動連携（講師データ取得） ──────────────────────
+
+async function loadInstructorsFromGas(silent) {
+  const url = (localStorage.getItem(SHEETS_URL_KEY) || '').trim();
+  if (!url) {
+    if (!silent) showImportMessage('importSheetMessage', 'GAS URLが設定されていません', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('fetchInstructorsBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '取得中...'; }
+
+  try {
+    const res = await fetch(url + '?type=instructors');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+
+    if (json.error && !json.instructors) throw new Error(json.error);
+    if (!json.instructors || json.instructors.length === 0) {
+      if (!silent) showImportMessage('importSheetMessage', '講師マスタにデータがありません', 'error');
+      return;
+    }
+
+    const daily = json.instructors.filter(r => isTeamMatch(r.team, 'daily'));
+    const voice = json.instructors.filter(r => isTeamMatch(r.team, 'voice'));
+
+    if (daily.length === 0 && voice.length === 0) {
+      if (!silent) showImportMessage('importSheetMessage', '「日報」「音声」に該当するデータがありません', 'error');
+      return;
+    }
+
+    if (daily.length > 0) populateTeamFromRows('daily', daily);
+    if (voice.length > 0) populateTeamFromRows('voice', voice);
+
+    const msg = [
+      daily.length > 0 ? `日報${daily.length}人` : '',
+      voice.length > 0 ? `音声${voice.length}人` : ''
+    ].filter(Boolean).join('・') + 'を読み込みました';
+    showImportMessage('importSheetMessage', msg, 'success');
+  } catch (err) {
+    if (!silent) showImportMessage('importSheetMessage', '取得に失敗しました: ' + err.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'GASから自動読み込み'; }
+  }
+}
+
+// ── ここまでGAS自動連携 ───────────────────────────────
+
+// ── スプレッドシートCSVインポート ───────────────────
+
+function parseCsvLine(line) {
+  const result = [];
+  let current = '';
+  let inQuote = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQuote && line[i + 1] === '"') { current += '"'; i++; }
+      else inQuote = !inQuote;
+    } else if (c === ',' && !inQuote) {
+      result.push(current);
+      current = '';
+    } else {
+      current += c;
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+function parseCsvText(text) {
+  // BOM除去
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) return { error: 'データが見つかりません（2行以上必要です）' };
+
+  const headers = parseCsvLine(lines[0]).map(h => h.trim());
+  const norm = h => h.toLowerCase();
+  const findCol = (...keys) => headers.findIndex(h => keys.some(k => norm(h).includes(norm(k))));
+
+  const nameIdx  = findCol('講師名', '名前', '氏名', 'name');
+  const teamIdx  = findCol('チーム', 'team', '担当', '区分');
+  const rateIdx  = findCol('時給', '単価', 'rate', '金額');
+  const hoursIdx = findCol('稼働時間', '時間数', 'hours');
+
+  if (nameIdx === -1) return { error: '「講師名」または「名前」列が見つかりません' };
+
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = parseCsvLine(lines[i]);
+    const name = (cols[nameIdx] || '').trim();
+    if (!name) continue;
+    const team  = teamIdx  >= 0 ? (cols[teamIdx]  || '').trim() : '';
+    const rate  = rateIdx  >= 0 ? parseInt((cols[rateIdx]  || '').replace(/[^\d]/g, ''), 10) || 0 : 0;
+    const hours = hoursIdx >= 0 ? parseFloat((cols[hoursIdx] || '').replace(/[^\d.]/g, '')) || '' : '';
+    rows.push({ name, team, rate, hours });
+  }
+
+  if (rows.length === 0) return { error: '有効なデータが見つかりません' };
+  return { rows, hasTeam: teamIdx >= 0 };
+}
+
+function isTeamMatch(teamStr, team) {
+  const s = teamStr.toLowerCase();
+  if (team === 'daily') return s.includes('日報') || s.includes('nippou') || s.includes('daily');
+  if (team === 'voice') return s.includes('音声') || s.includes('onsei') || s.includes('voice');
+  return false;
+}
+
+function populateTeamFromRows(team, rows) {
+  const container = document.getElementById(team + '-instructors');
+  if (!container) return 0;
+  container.innerHTML = '';
+  rows.forEach(r => addInstructor(team, r));
+  renderInstructorDisplay(team);
+  runCalculation();
+  saveDraft();
+  return rows.length;
+}
+
+function showImportMessage(elId, text, type) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'import-message ' + (type || '');
+  setTimeout(() => { el.textContent = ''; el.className = 'import-message'; }, 4000);
+}
+
+function handleTeamCsvImport(team, file) {
+  const msgId = team + '-import-msg';
+  const reader = new FileReader();
+  reader.onload = e => {
+    const result = parseCsvText(e.target.result);
+    if (result.error) { showImportMessage(msgId, result.error, 'error'); return; }
+
+    const filtered = result.hasTeam
+      ? result.rows.filter(r => isTeamMatch(r.team, team))
+      : result.rows;
+
+    if (filtered.length === 0) {
+      const label = team === 'daily' ? '日報' : '音声';
+      showImportMessage(msgId, result.hasTeam ? `「${label}」のデータがありません` : 'データが見つかりません', 'error');
+      return;
+    }
+    const count = populateTeamFromRows(team, filtered);
+    showImportMessage(msgId, `${count}人を読み込みました`, 'success');
+  };
+  reader.onerror = () => showImportMessage(msgId, 'ファイルの読み込みに失敗しました', 'error');
+  reader.readAsText(file);
+}
+
+function handleSheetImport(file) {
+  const msgId = 'importSheetMessage';
+  const reader = new FileReader();
+  reader.onload = e => {
+    const result = parseCsvText(e.target.result);
+    if (result.error) { showImportMessage(msgId, result.error, 'error'); return; }
+
+    if (!result.hasTeam) {
+      showImportMessage(msgId, '「チーム」列が見つかりません。各チームのボタンから個別に読み込んでください', 'error');
+      return;
+    }
+
+    const dailyRows = result.rows.filter(r => isTeamMatch(r.team, 'daily'));
+    const voiceRows = result.rows.filter(r => isTeamMatch(r.team, 'voice'));
+
+    if (dailyRows.length === 0 && voiceRows.length === 0) {
+      showImportMessage(msgId, '「日報」「音声」に該当するデータがありません', 'error');
+      return;
+    }
+
+    if (dailyRows.length > 0) populateTeamFromRows('daily', dailyRows);
+    if (voiceRows.length > 0) populateTeamFromRows('voice', voiceRows);
+
+    const msg = [
+      dailyRows.length > 0 ? `日報${dailyRows.length}人` : '',
+      voiceRows.length > 0 ? `音声${voiceRows.length}人` : ''
+    ].filter(Boolean).join('・') + 'を読み込みました';
+    showImportMessage(msgId, msg, 'success');
+  };
+  reader.onerror = () => showImportMessage(msgId, 'ファイルの読み込みに失敗しました', 'error');
+  reader.readAsText(file);
+}
+
+// ── ここまでCSVインポート ────────────────────────────
+
 // イベントリスナー登録
 function init() {
   const monthEl = document.getElementById('targetMonth');
@@ -741,15 +928,30 @@ function init() {
   if (sheetsUrlEl) sheetsUrlEl.value = localStorage.getItem(SHEETS_URL_KEY) || '';
   const autoSendEl = document.getElementById('autoSendToSheets');
   if (autoSendEl) autoSendEl.checked = localStorage.getItem(AUTO_SEND_SHEETS_KEY) === 'true';
+  const autoLoadEl = document.getElementById('autoLoadInstructors');
+  if (autoLoadEl) autoLoadEl.checked = localStorage.getItem(AUTO_LOAD_INSTRUCTORS_KEY) === 'true';
   const saveSheetsUrlBtn = document.getElementById('saveSheetsUrlBtn');
   if (saveSheetsUrlBtn) {
     saveSheetsUrlBtn.addEventListener('click', () => {
       const url = document.getElementById('sheetsUrl')?.value?.trim() || '';
       const auto = document.getElementById('autoSendToSheets')?.checked || false;
+      const autoLoad = document.getElementById('autoLoadInstructors')?.checked || false;
       localStorage.setItem(SHEETS_URL_KEY, url);
       localStorage.setItem(AUTO_SEND_SHEETS_KEY, auto ? 'true' : 'false');
+      localStorage.setItem(AUTO_LOAD_INSTRUCTORS_KEY, autoLoad ? 'true' : 'false');
       showSaveMessage('設定を保存しました', 'success');
     });
+  }
+
+  // GAS 自動読み込みボタン
+  const fetchBtn = document.getElementById('fetchInstructorsBtn');
+  if (fetchBtn) {
+    fetchBtn.addEventListener('click', () => loadInstructorsFromGas(false));
+  }
+
+  // ページ読み込み時に自動取得
+  if (localStorage.getItem(AUTO_LOAD_INSTRUCTORS_KEY) === 'true') {
+    loadInstructorsFromGas(true);
   }
 
   const copyExp = document.getElementById('copyExpectedToActual');
@@ -775,6 +977,34 @@ function init() {
       el.addEventListener('change', () => { runCalculation(); saveDraft(); });
     }
   });
+
+  // CSVインポート（チーム別）
+  ['daily', 'voice'].forEach(team => {
+    const csvInput = document.getElementById(team + '-csv-input');
+    const importBtn = document.querySelector('[data-import-team="' + team + '"]');
+    if (importBtn && csvInput) {
+      importBtn.addEventListener('click', () => csvInput.click());
+      csvInput.addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        handleTeamCsvImport(team, file);
+        e.target.value = '';
+      });
+    }
+  });
+
+  // CSVインポート（一括）
+  const sheetCsvInput = document.getElementById('sheetCsvInput');
+  const importSheetBtn = document.getElementById('importSheetBtn');
+  if (importSheetBtn && sheetCsvInput) {
+    importSheetBtn.addEventListener('click', () => sheetCsvInput.click());
+    sheetCsvInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      handleSheetImport(file);
+      e.target.value = '';
+    });
+  }
 
   runCalculation();
 }

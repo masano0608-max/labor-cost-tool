@@ -63,6 +63,9 @@
         <label class="checkbox-label">
           <input type="checkbox" id="autoSendToSheets"> 保存時にスプレッドシートへ自動送信
         </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="autoLoadInstructors"> ページ読み込み時に講師データを自動取得
+        </label>
         <button type="button" id="saveSheetsUrlBtn" class="btn-small">URLを保存</button>
       </details>
     </section>
@@ -71,11 +74,23 @@
     <section class="section">
       <h2>チーム別入力</h2>
       <p class="section-desc">日報・音声チームの予想は、シフト表の講師リストをもとに各講師の稼働時間×時給を入力してください。</p>
+      <div class="import-sheet-bar">
+        <button type="button" id="fetchInstructorsBtn" class="btn-fetch-gas">GASから自動読み込み</button>
+        <input type="file" id="sheetCsvInput" accept=".csv" style="display:none">
+        <button type="button" id="importSheetBtn" class="btn-import-sheet">CSVから一括読み込み</button>
+        <span class="import-hint">CSVに「講師名」「チーム」（日報/音声）「時給」列が必要です</span>
+        <span id="importSheetMessage" class="import-message"></span>
+      </div>
       <div class="teams-grid">
 
         <!-- 日報チーム -->
         <div class="team-card">
-          <h3>日報チーム</h3>
+          <div class="team-card-header">
+            <h3>日報チーム</h3>
+            <input type="file" id="daily-csv-input" accept=".csv" style="display:none">
+            <button type="button" class="btn-import-team" data-import-team="daily">スプシから読み込む</button>
+            <span id="daily-import-msg" class="import-message"></span>
+          </div>
           <div class="expected-actual-row">
             <div class="ea-block">
               <span class="ea-label">予想（講師別稼働）</span>
@@ -101,7 +116,12 @@
 
         <!-- 音声チーム -->
         <div class="team-card">
-          <h3>音声チーム</h3>
+          <div class="team-card-header">
+            <h3>音声チーム</h3>
+            <input type="file" id="voice-csv-input" accept=".csv" style="display:none">
+            <button type="button" class="btn-import-team" data-import-team="voice">スプシから読み込む</button>
+            <span id="voice-import-msg" class="import-message"></span>
+          </div>
           <div class="expected-actual-row">
             <div class="ea-block">
               <span class="ea-label">予想（講師別稼働）</span>

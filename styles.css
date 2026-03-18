@@ -1109,6 +1109,107 @@ body {
   font-weight: 700;
 }
 
+/* スプレッドシートCSVインポート */
+.import-sheet-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  padding: 0.65rem 1rem;
+  background: #f0fdf4;
+  border: 2px solid #86efac;
+  border-radius: 10px;
+}
+
+.btn-fetch-gas {
+  padding: 0.45rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.btn-fetch-gas:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  transform: translateY(-1px);
+}
+
+.btn-fetch-gas:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-import-sheet {
+  padding: 0.45rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.btn-import-sheet:hover {
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+  transform: translateY(-1px);
+}
+
+.import-hint {
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.team-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.35rem;
+}
+
+.team-card-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2980b9;
+}
+
+.btn-import-team {
+  padding: 0.28rem 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1.5px solid #93c5fd;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-import-team:hover {
+  background: #dbeafe;
+  border-color: #60a5fa;
+}
+
+.import-message {
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.import-message.success { color: #16a34a; }
+.import-message.error   { color: #dc2626; }
+
 /* レスポンシブ */
 @media (max-width: 600px) {
   .main {

@@ -1,0 +1,216 @@
+/**
+ * 人件費計算ツール - スプレッドシート連携用 Google Apps Script
+ *
+ * セットアップ手順:
+ * 1. Googleスプレッドシートを新規作成
+ * 2. 拡張機能 > Apps Script を開く
+ * 3. このコードをコピー＆ペーストして保存
+ * 4. デプロイ > 新しいデプロイ > ウェブアプリ で公開
+ *    - 次のユーザーとして実行: 自分
+ *    - アクセスできるユーザー: 全員（匿名ユーザーを含む）
+ * 5. 発行されたURLをアプリの設定に貼り付け
+ * 6. スプレッドシートのメニュー「人件費ツール > テンプレートを初期化」を実行
+ */
+
+var SHEET_NAME           = '人件費データ';
+var INSTRUCTOR_SHEET_NAME = '講師マスタ';
+
+// ── GET: 講師データ取得 / 動作確認 ──────────────────────
+
+function doGet(e) {
+  var type = (e && e.parameter && e.parameter.type) || '';
+  if (type === 'instructors') {
+    return getInstructorData();
+  }
+  return createJsonResponse({ status: 'ok', message: '人件費ツール連携API' });
+}
+
+/**
+ * 「講師マスタ」シートから講師データを JSON で返す
+ * GET ?type=instructors で呼び出す
+ */
+function getInstructorData() {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName(INSTRUCTOR_SHEET_NAME);
+    if (!sheet) {
+      return createJsonResponse({ instructors: [], error: '「' + INSTRUCTOR_SHEET_NAME + '」シートが見つかりません。メニューからテンプレートを初期化してください。' });
+    }
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) {
+      return createJsonResponse({ instructors: [] });
+    }
+    var data = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+    var instructors = data
+      .filter(function(row) { return row[0] && String(row[0]).trim(); })
+      .map(function(row) {
+        return {
+          name:  String(row[0]).trim(),
+          team:  String(row[1]).trim(),
+          rate:  parseInt(row[2], 10) || 0,
+          hours: parseFloat(row[3]) || ''
+        };
+      });
+    return createJsonResponse({ instructors: instructors });
+  } catch (err) {
+    return createJsonResponse({ instructors: [], error: String(err.message) });
+  }
+}
+
+// ── POST: 計算結果を保存 ──────────────────────────────────
+
+function doPost(e) {
+  try {
+    var raw = '';
+    if (e.postData && e.postData.contents) {
+      raw = e.postData.contents;
+    } else if (e.parameter && e.parameter.payload) {
+      raw = e.parameter.payload;
+    }
+    var data  = JSON.parse(raw || '{}');
+    var sheet = getOrCreateSheet();
+
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(getHeaders());
+    }
+    sheet.appendRow(serializeRow(data));
+
+    return createJsonResponse({ success: true, message: 'データを保存しました' });
+  } catch (err) {
+    return createJsonResponse({ success: false, message: String(err.message) }, 400);
+  }
+}
+
+// ── テンプレート初期化（メニューから実行） ────────────────
+
+/**
+ * スプレッドシートを開いたときにメニューを追加
+ */
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('人件費ツール')
+    .addItem('テンプレートを初期化', 'setupTemplate')
+    .addToUi();
+}
+
+/**
+ * 「講師マスタ」「人件費データ」シートを作成し、サンプルデータと書式を設定する
+ */
+function setupTemplate() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ui = SpreadsheetApp.getUi();
+
+  // ── 講師マスタ シート ──
+  var masterSheet = ss.getSheetByName(INSTRUCTOR_SHEET_NAME);
+  if (!masterSheet) {
+    masterSheet = ss.insertSheet(INSTRUCTOR_SHEET_NAME);
+  } else {
+    masterSheet.clearContents();
+    masterSheet.clearFormats();
+  }
+
+  var masterHeaders = ['講師名', 'チーム', '時給（円/h）', '稼働時間（h）※任意'];
+  masterSheet.getRange(1, 1, 1, masterHeaders.length).setValues([masterHeaders]);
+  masterSheet.getRange(1, 1, 1, masterHeaders.length)
+    .setBackground('#4a90d9')
+    .setFontColor('#ffffff')
+    .setFontWeight('bold')
+    .setHorizontalAlignment('center');
+
+  var sampleData = [
+    ['田中 太郎', '日報', 1500, ''],
+    ['佐藤 花子', '日報', 1400, ''],
+    ['鈴木 一郎', '音声', 1300, ''],
+    ['高橋 次郎', '音声', 1200, '']
+  ];
+  masterSheet.getRange(2, 1, sampleData.length, sampleData[0].length).setValues(sampleData);
+
+  masterSheet.setColumnWidth(1, 160);
+  masterSheet.setColumnWidth(2, 80);
+  masterSheet.setColumnWidth(3, 120);
+  masterSheet.setColumnWidth(4, 180);
+
+  // チーム列にドロップダウン入力規則を設定（3行目以降）
+  var teamRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['日報', '音声'], true)
+    .setAllowInvalid(false)
+    .build();
+  masterSheet.getRange(2, 2, 100, 1).setDataValidation(teamRule);
+
+  // ── 人件費データ シート ──
+  var dataSheet = getOrCreateSheet();
+  if (dataSheet.getLastRow() === 0) {
+    dataSheet.appendRow(getHeaders());
+    dataSheet.getRange(1, 1, 1, getHeaders().length)
+      .setBackground('#2c3e50')
+      .setFontColor('#ffffff')
+      .setFontWeight('bold');
+  }
+
+  ui.alert('セットアップ完了', '「' + INSTRUCTOR_SHEET_NAME + '」シートにサンプルデータを作成しました。\n\n講師名・チーム（日報/音声）・時給を入力してください。\nウェブアプリを再デプロイ後、人件費ツールから自動取得できます。', ui.ButtonSet.OK);
+}
+
+// ── 共通ユーティリティ ────────────────────────────────────
+
+function getOrCreateSheet() {
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_NAME);
+  }
+  return sheet;
+}
+
+function getHeaders() {
+  return [
+    '対象月', '在籍生徒数', '営業日数',
+    '日報予想/人', '日報予想合計', '日報実際/人', '日報実際合計',
+    '音声予想/人', '音声予想合計', '音声実際/人', '音声実際合計',
+    'コーチング予想/人', 'コーチング予想合計', 'コーチング実際/人', 'コーチング実際合計',
+    '生徒1人あたり予想', '生徒1人あたり実際',
+    '人件費予想', '人件費実際', '割合', '差異', '判定',
+    '送信日時'
+  ];
+}
+
+function serializeRow(data) {
+  var r      = data.results       || {};
+  var ar     = data.actualResults || {};
+  var inputs = data.inputs        || {};
+  var ratio  = r.total > 0 ? ((ar.total || 0) / r.total * 100).toFixed(1) : '-';
+  var diff   = (ar.total || 0) - (r.total || 0);
+  var judge  = ratio === '-' ? '-' : (ratio > 100 ? '超過' : ratio < 100 ? '予算内' : '同額');
+  var diffStr = diff >= 0 ? '+' + diff : String(diff);
+
+  return [
+    data.label || '',
+    inputs.students    || 0,
+    inputs.businessDays || 0,
+    r.daily   ? r.daily.per   : '',
+    r.daily   ? r.daily.total : '',
+    ar.daily  ? ar.daily.per  : '',
+    ar.daily  ? ar.daily.total: '',
+    r.voice   ? r.voice.per   : '',
+    r.voice   ? r.voice.total : '',
+    ar.voice  ? ar.voice.per  : '',
+    ar.voice  ? ar.voice.total: '',
+    r.coaching  ? r.coaching.per   : '',
+    r.coaching  ? r.coaching.total : '',
+    ar.coaching ? ar.coaching.per  : '',
+    ar.coaching ? ar.coaching.total: '',
+    r.perStudent  !== undefined ? r.perStudent  : '',
+    ar.perStudent !== undefined ? ar.perStudent : '',
+    r.total  !== undefined ? r.total  : '',
+    ar.total !== undefined ? ar.total : '',
+    ratio,
+    diffStr,
+    judge,
+    new Date().toISOString()
+  ];
+}
+
+function createJsonResponse(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
