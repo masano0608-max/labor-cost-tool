@@ -145,17 +145,17 @@
           </div>
         </div>
 
-        <!-- コーチングチーム（変更なし） -->
+        <!-- コーチングチーム -->
         <div class="team-card">
           <h3>コーチングチーム</h3>
-          <p class="team-desc">単価 × 回数/月 × 提出率</p>
+          <p class="team-desc">（1500円×生徒数 ＋ 1750円×生徒数）× 回数/月</p>
           <div class="expected-actual-row">
             <div class="ea-block">
               <span class="ea-label">予想</span>
               <div class="input-group">
-                <label>単価（円/回）<input type="number" id="coaching-price" min="0" value="1750"></label>
+                <label>1500円/回 の生徒数<input type="number" id="coaching-students-1500" min="0" value="0"></label>
+                <label>1750円/回 の生徒数<input type="number" id="coaching-students-1750" min="0" value="0"></label>
                 <label>対応回数（回/人/月）<input type="number" id="coaching-count" min="0" value="4"></label>
-                <label>提出率（%）<input type="number" id="coaching-rate" min="0" max="100" value="100"></label>
               </div>
             </div>
           </div>
@@ -210,12 +210,10 @@
         </div>
         <div class="result-item">
           <span class="result-label">コーチングチーム</span>
-          <span class="result-value">予想 <span id="result-coaching-per">0</span>円/人</span>
           <span class="result-total">合計 <span id="result-coaching-total">0</span>円</span>
         </div>
         <div class="result-item actual-row">
           <span class="result-label"></span>
-          <span class="result-value">実際 <span id="result-act-coaching-per">0</span>円/人</span>
           <span class="result-total">合計 <span id="result-act-coaching-total">0</span>円</span>
         </div>
       </div>
@@ -282,8 +280,8 @@
               <span>コーチング</span>
               <span id="exp-coaching">0</span>
               <span id="act-coaching">0</span>
-              <span id="exp-per-coaching">-</span>
-              <span id="act-per-coaching">-</span>
+              <span>-</span>
+              <span>-</span>
               <span id="ratio-coaching">-</span>
             </div>
           </div>

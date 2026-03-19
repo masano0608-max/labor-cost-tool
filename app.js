@@ -131,9 +131,9 @@ function getInputs() {
     rate: Math.min(100, Math.max(0, parseInt(document.getElementById('voice-rate')?.value, 10) || 100)) / 100
   };
   const coaching = {
-    price: parseInt(document.getElementById('coaching-price')?.value, 10) || 0,
+    students1500: parseInt(document.getElementById('coaching-students-1500')?.value, 10) || 0,
+    students1750: parseInt(document.getElementById('coaching-students-1750')?.value, 10) || 0,
     count: parseInt(document.getElementById('coaching-count')?.value, 10) || 0,
-    rate: Math.min(100, Math.max(0, parseInt(document.getElementById('coaching-rate')?.value, 10) || 100)) / 100
   };
   return { students, businessDays, daily, voice, coaching };
 }
@@ -154,16 +154,18 @@ function calculate(inputs) {
   const dailyPer = daily.price * (daily.mins / 60) * businessDays * daily.rate;
   const voicePer = voice.price * (voice.mins / 60) * businessDays * voice.rate;
 
-  // コーチング: 単価 × 回数 × 提出率
-  const coachingPer = coaching.price * coaching.count * coaching.rate;
+  // コーチング: (1500円×生徒数 + 1750円×生徒数) × 回数
+  const coachingTotal = (coaching.students1500 * 1500 + coaching.students1750 * 1750) * coaching.count;
 
-  const perStudent = dailyPer + voicePer + coachingPer;
-  const total = perStudent * students;
+  const dailyTotal = dailyPer * students;
+  const voiceTotal = voicePer * students;
+  const total = dailyTotal + voiceTotal + coachingTotal;
+  const perStudent = students > 0 ? total / students : 0;
 
   return {
-    daily: { per: dailyPer, total: dailyPer * students },
-    voice: { per: voicePer, total: voicePer * students },
-    coaching: { per: coachingPer, total: coachingPer * students },
+    daily: { per: dailyPer, total: dailyTotal },
+    voice: { per: voicePer, total: voiceTotal },
+    coaching: { per: null, total: coachingTotal },
     perStudent,
     total
   };
@@ -172,7 +174,6 @@ function calculate(inputs) {
 // 計算ロジックの動的解説を更新
 function updateOverview(inputs, results, dailyInstructors, voiceInstructors) {
   const { coaching } = inputs;
-  const coachingRate = Math.round(coaching.rate * 100);
 
   const dailyEl = document.getElementById('overview-daily');
   const voiceEl = document.getElementById('overview-voice');
@@ -195,7 +196,9 @@ function updateOverview(inputs, results, dailyInstructors, voiceInstructors) {
     }
   }
   if (coachingEl) {
-    coachingEl.textContent = `コーチング: ${formatNumber(coaching.price)} × ${coaching.count}回 × ${coachingRate}% = ${formatNumber(results.coaching.per)}円/人`;
+    const t1500 = coaching.students1500 * 1500 * coaching.count;
+    const t1750 = coaching.students1750 * 1750 * coaching.count;
+    coachingEl.textContent = `コーチング: 1500円×${coaching.students1500}人 ＋ 1750円×${coaching.students1750}人 × ${coaching.count}回 ＝ ${formatNumber(t1500 + t1750)}円`;
   }
 }
 
@@ -334,8 +337,7 @@ function runCalculation() {
   const voicePredTotal = calcInstructorTotal(voiceInstructors);
 
   const { students, coaching } = inputs;
-  const coachingPer = coaching.price * coaching.count * coaching.rate;
-  const coachingTotal = coachingPer * students;
+  const coachingTotal = (coaching.students1500 * 1500 + coaching.students1750 * 1750) * coaching.count;
   const grandTotal = dailyPredTotal + voicePredTotal + coachingTotal;
 
   const results = {
@@ -347,7 +349,7 @@ function runCalculation() {
       per: students > 0 ? voicePredTotal / students : 0,
       total: voicePredTotal
     },
-    coaching: { per: coachingPer, total: coachingTotal },
+    coaching: { per: null, total: coachingTotal },
     perStudent: students > 0 ? grandTotal / students : 0,
     total: grandTotal
   };
@@ -423,12 +425,11 @@ function exportToCsv() {
   const dailyPredTotal = calcInstructorTotal(dailyInstructors);
   const voicePredTotal = calcInstructorTotal(voiceInstructors);
   const { students, coaching } = inputs;
-  const coachingPer = coaching.price * coaching.count * coaching.rate;
-  const coachingTotal = coachingPer * students;
+  const coachingTotal = (coaching.students1500 * 1500 + coaching.students1750 * 1750) * coaching.count;
   const results = {
     daily: { per: students > 0 ? dailyPredTotal / students : 0, total: dailyPredTotal },
     voice: { per: students > 0 ? voicePredTotal / students : 0, total: voicePredTotal },
-    coaching: { per: coachingPer, total: coachingTotal },
+    coaching: { per: null, total: coachingTotal },
     perStudent: students > 0 ? (dailyPredTotal + voicePredTotal + coachingTotal) / students : 0,
     total: dailyPredTotal + voicePredTotal + coachingTotal
   };
@@ -466,7 +467,9 @@ function exportToCsv() {
     ...voiceInstructors.map(i => [`　${i.name || '名前未入力'} ${i.hours}h × ${formatNumber(i.rate)}円/h`, formatNumber(i.hours * i.rate) + '円', '']),
     ['音声チーム 予想合計', formatNumber(results.voice.total) + '円', formatNumber(actualResults.voice.total) + '円'],
     [''],
-    ['コーチングチーム 円/人', formatNumber(results.coaching.per), formatNumber(actualResults.coaching.per)],
+    ['コーチングチーム（1500円） 生徒数', coaching.students1500 + '人', ''],
+    ['コーチングチーム（1750円） 生徒数', coaching.students1750 + '人', ''],
+    ['コーチングチーム 対応回数', coaching.count + '回/人/月', ''],
     ['コーチングチーム 合計', formatNumber(results.coaching.total), formatNumber(actualResults.coaching.total)],
     [''],
     ['生徒1人あたり合計', formatNumber(results.perStudent) + '円', formatNumber(actualResults.perStudent) + '円'],
@@ -605,9 +608,9 @@ function loadSavedData(data) {
   const ids = [
     ['students', inputs.students],
     ['businessDays', inputs.businessDays],
-    ['coaching-price', inputs.coaching?.price],
+    ['coaching-students-1500', inputs.coaching?.students1500],
+    ['coaching-students-1750', inputs.coaching?.students1750],
     ['coaching-count', inputs.coaching?.count],
-    ['coaching-rate', Math.round((inputs.coaching?.rate || 0) * 100)],
     ['actual-daily-payment', data.payments?.daily ?? 0],
     ['actual-voice-payment', data.payments?.voice ?? 0],
     ['actual-coaching-payment', data.payments?.coaching ?? 0]
@@ -674,9 +677,9 @@ function loadDraft() {
     const ids = [
       ['students', inputs.students],
       ['businessDays', inputs.businessDays],
-      ['coaching-price', inputs.coaching?.price],
+      ['coaching-students-1500', inputs.coaching?.students1500],
+      ['coaching-students-1750', inputs.coaching?.students1750],
       ['coaching-count', inputs.coaching?.count],
-      ['coaching-rate', Math.round((inputs.coaching?.rate || 0) * 100)],
       ['actual-daily-payment', d.payments?.daily ?? 0],
       ['actual-voice-payment', d.payments?.voice ?? 0],
       ['actual-coaching-payment', d.payments?.coaching ?? 0]
@@ -968,7 +971,7 @@ function init() {
 
   const ids = [
     'students', 'businessDays', 'targetMonth',
-    'coaching-price', 'coaching-count', 'coaching-rate',
+    'coaching-students-1500', 'coaching-students-1750', 'coaching-count',
     'actual-daily-payment', 'actual-voice-payment', 'actual-coaching-payment'
   ];
   ids.forEach(id => {
@@ -1041,9 +1044,9 @@ window.LaborCostCalc = {
       voicePrice: 'voice-price',
       voiceMins: 'voice-mins',
       voiceRate: 'voice-rate',
-      coachingPrice: 'coaching-price',
+      coachingStudents1500: 'coaching-students-1500',
+      coachingStudents1750: 'coaching-students-1750',
       coachingCount: 'coaching-count',
-      coachingRate: 'coaching-rate'
     };
     Object.keys(values).forEach(k => {
       const id = map[k];
