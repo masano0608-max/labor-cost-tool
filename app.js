@@ -610,7 +610,7 @@ function loadSavedData(data) {
     ['businessDays', inputs.businessDays],
     ['coaching-students-1500', inputs.coaching?.students1500],
     ['coaching-students-1750', inputs.coaching?.students1750],
-    ['coaching-count', inputs.coaching?.count],
+    ['coaching-count', inputs.coaching?.count > 0 ? inputs.coaching.count : undefined],
     ['actual-daily-payment', data.payments?.daily ?? 0],
     ['actual-voice-payment', data.payments?.voice ?? 0],
     ['actual-coaching-payment', data.payments?.coaching ?? 0]
@@ -679,7 +679,7 @@ function loadDraft() {
       ['businessDays', inputs.businessDays],
       ['coaching-students-1500', inputs.coaching?.students1500],
       ['coaching-students-1750', inputs.coaching?.students1750],
-      ['coaching-count', inputs.coaching?.count],
+      ['coaching-count', inputs.coaching?.count > 0 ? inputs.coaching.count : undefined],
       ['actual-daily-payment', d.payments?.daily ?? 0],
       ['actual-voice-payment', d.payments?.voice ?? 0],
       ['actual-coaching-payment', d.payments?.coaching ?? 0]
