@@ -560,21 +560,28 @@ function loadDraft() {
 // ── GAS 自動連携（講師データ取得） ──────────────────────
 
 async function loadInstructorsFromGas(silent) {
-  const url = (localStorage.getItem(SHEETS_URL_KEY) || '').trim() || DEFAULT_GAS_URL;
-  if (!url) {
-    if (!silent) showImportMessage('importSheetMessage', 'GAS URLが設定されていません', 'error');
-    return;
-  }
+  const storedUrl = (localStorage.getItem(SHEETS_URL_KEY) || '').trim();
+  const urls = [...new Set([storedUrl, DEFAULT_GAS_URL].filter(Boolean))];
 
   const btn = document.getElementById('fetchInstructorsBtn');
   if (btn) { btn.disabled = true; btn.textContent = '取得中...'; }
 
-  try {
-    const res = await fetch(url + '?type=instructors');
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const json = await res.json();
+  let json = null;
+  let lastErr = null;
+  for (const url of urls) {
+    try {
+      const res = await fetch(url + '?type=instructors', { credentials: 'omit' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      json = await res.json();
+      break;
+    } catch (err) {
+      lastErr = err;
+    }
+  }
 
-    if (json.error && !json.instructors) throw new Error(json.error);
+  try {
+    if (!json) throw lastErr || new Error('取得失敗');
+
     if (!json.instructors || json.instructors.length === 0) {
       if (!silent) showImportMessage('importSheetMessage', '講師マスタにデータがありません', 'error');
       return;
