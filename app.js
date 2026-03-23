@@ -10,7 +10,7 @@ const AUTO_SEND_SHEETS_KEY = 'labor-cost-auto-send-sheets';
 const AUTO_LOAD_INSTRUCTORS_KEY = 'labor-cost-auto-load-instructors';
 
 // デフォルトのGAS URL（設定不要で自動連携）
-const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbwWoFO8LXGWyelmtvD6KKoQRzrP9H0qdIgsKMtSGNgGsGYZiwNnueKbsf8YyEHoOpau/exec';
+const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbziZ7qBQT0GCdRoexYAGgGeRJL4Ss7WHZjvQHLeWVgfXQkmdBRxcSzhYYEWCS1zg3yc/exec';
 
 // ── 講師リスト管理 ──────────────────────────────
 
