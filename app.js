@@ -430,8 +430,8 @@ function saveCurrentData() {
   }
 }
 
-// スプレッドシートへデータ送信（フォームPOSTでCORSを回避）
-function sendToSheets(data) {
+// スプレッドシートへデータ送信
+async function sendToSheets(data) {
   const url = (localStorage.getItem(SHEETS_URL_KEY) || '').trim() || DEFAULT_GAS_URL;
   if (!url) {
     showSaveMessage('スプレッドシートURLを設定してください', 'error');
@@ -439,51 +439,21 @@ function sendToSheets(data) {
   }
 
   const btn = document.getElementById('sendToSheetsBtn');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = '送信中...';
+  if (btn) { btn.disabled = true; btn.textContent = '送信中...'; }
+
+  try {
+    await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'payload=' + encodeURIComponent(JSON.stringify(data))
+    });
+    showSaveMessage('スプレッドシートに送信しました', 'success');
+  } catch (err) {
+    showSaveMessage('送信に失敗しました', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'スプレッドシートに送信'; }
   }
-
-  return new Promise((resolve, reject) => {
-    const iframe = document.createElement('iframe');
-    iframe.name = 'sheets-post-target';
-    iframe.style.display = 'none';
-    iframe.onload = function () {
-      iframe.remove();
-      if (btn) { btn.disabled = false; btn.textContent = 'スプレッドシートに送信'; }
-      showSaveMessage('スプレッドシートに送信しました', 'success');
-      resolve();
-    };
-    iframe.onerror = function () {
-      iframe.remove();
-      if (btn) { btn.disabled = false; btn.textContent = 'スプレッドシートに送信'; }
-      showSaveMessage('送信に失敗しました', 'error');
-      reject(new Error('送信失敗'));
-    };
-    document.body.appendChild(iframe);
-
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = url.trim();
-    form.target = 'sheets-post-target';
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'payload';
-    input.value = JSON.stringify(data);
-    form.appendChild(input);
-    document.body.appendChild(form);
-    form.submit();
-    form.remove();
-
-    setTimeout(() => {
-      if (btn && btn.disabled) {
-        btn.disabled = false;
-        btn.textContent = 'スプレッドシートに送信';
-      }
-      iframe.remove();
-      resolve();
-    }, 3000);
-  });
 }
 
 function showSaveMessage(text, type) {
