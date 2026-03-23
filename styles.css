@@ -257,6 +257,10 @@ body {
   font-size: 0.92rem;
 }
 
+.result-total.actual {
+  color: #2563eb;
+}
+
 .summary-table-wrap {
   margin-top: 1.25rem;
   padding-top: 1.25rem;
@@ -422,7 +426,7 @@ body {
 
 .ratio-row {
   display: grid;
-  grid-template-columns: 90px 1fr 1fr 1fr 1fr 75px;
+  grid-template-columns: 90px 1fr 1fr 75px;
   gap: 1rem;
   align-items: center;
   padding: 0.75rem 0.5rem;
@@ -452,6 +456,17 @@ body {
 .ratio-block.summary {
   padding-top: 1rem;
   border-top: 2px solid #3498db;
+}
+
+.team-ratio-wrap {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.team-ratio-wrap .ratio-block {
+  flex: 1;
+  min-width: 180px;
 }
 
 /* 割合・差異 */

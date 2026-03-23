@@ -118,24 +118,12 @@ function getCurrentMonthStr() {
 
 // 入力値の取得（予想用）
 function getInputs() {
-  const students = parseInt(document.getElementById('students')?.value, 10) || 0;
-  const businessDays = parseInt(document.getElementById('businessDays')?.value, 10) || 30;
-  const daily = {
-    price: parseInt(document.getElementById('daily-price')?.value, 10) || 0,
-    mins: parseInt(document.getElementById('daily-mins')?.value, 10) || 0,
-    rate: Math.min(100, Math.max(0, parseInt(document.getElementById('daily-rate')?.value, 10) || 100)) / 100
-  };
-  const voice = {
-    price: parseInt(document.getElementById('voice-price')?.value, 10) || 0,
-    mins: parseInt(document.getElementById('voice-mins')?.value, 10) || 0,
-    rate: Math.min(100, Math.max(0, parseInt(document.getElementById('voice-rate')?.value, 10) || 100)) / 100
-  };
   const coaching = {
     students1500: parseInt(document.getElementById('coaching-students-1500')?.value, 10) || 0,
     students1750: parseInt(document.getElementById('coaching-students-1750')?.value, 10) || 0,
     count: parseInt(document.getElementById('coaching-count')?.value, 10) || 0,
   };
-  return { students, businessDays, daily, voice, coaching };
+  return { coaching };
 }
 
 // 実際のチーム別支払い額を取得
@@ -205,62 +193,42 @@ function updateOverview(inputs, results, dailyInstructors, voiceInstructors) {
 // 結果表示を更新（予想・実際両方）
 function updateResults(results, actualResults) {
   const el = (id) => document.getElementById(id);
-  if (el('result-daily-per')) el('result-daily-per').textContent = formatNumber(results.daily.per);
   if (el('result-daily-total')) el('result-daily-total').textContent = formatNumber(results.daily.total);
-  if (el('result-voice-per')) el('result-voice-per').textContent = formatNumber(results.voice.per);
   if (el('result-voice-total')) el('result-voice-total').textContent = formatNumber(results.voice.total);
-  if (el('result-coaching-per')) el('result-coaching-per').textContent = formatNumber(results.coaching.per);
   if (el('result-coaching-total')) el('result-coaching-total').textContent = formatNumber(results.coaching.total);
-  if (el('result-per-student')) el('result-per-student').textContent = formatNumber(results.perStudent) + '円';
   if (el('result-total')) el('result-total').textContent = formatNumber(results.total) + '円';
 
   if (actualResults) {
-    if (el('result-act-daily-per')) el('result-act-daily-per').textContent = formatNumber(actualResults.daily.per);
     if (el('result-act-daily-total')) el('result-act-daily-total').textContent = formatNumber(actualResults.daily.total);
-    if (el('result-act-voice-per')) el('result-act-voice-per').textContent = formatNumber(actualResults.voice.per);
     if (el('result-act-voice-total')) el('result-act-voice-total').textContent = formatNumber(actualResults.voice.total);
-    if (el('result-act-coaching-per')) el('result-act-coaching-per').textContent = formatNumber(actualResults.coaching.per);
     if (el('result-act-coaching-total')) el('result-act-coaching-total').textContent = formatNumber(actualResults.coaching.total);
-    if (el('actual-per-student')) el('actual-per-student').textContent = formatNumber(actualResults.perStudent) + '円';
     if (el('actual-total')) el('actual-total').textContent = formatNumber(actualResults.total) + '円';
 
-    var diffTotal = actualResults.total - results.total;
-    var diffPer = actualResults.perStudent - results.perStudent;
+    const diffTotal = actualResults.total - results.total;
     if (el('summary-diff-total')) {
       el('summary-diff-total').textContent = (diffTotal >= 0 ? '+' : '') + formatNumber(diffTotal) + '円';
       el('summary-diff-total').className = 'summary-diff' + (diffTotal > 0 ? ' over' : diffTotal < 0 ? ' under' : ' exact');
     }
-    if (el('summary-diff-per')) {
-      el('summary-diff-per').textContent = (diffPer >= 0 ? '+' : '') + formatNumber(diffPer) + '円';
-      el('summary-diff-per').className = 'summary-diff' + (diffPer > 0 ? ' over' : diffPer < 0 ? ' under' : ' exact');
-    }
   } else {
     if (el('summary-diff-total')) { el('summary-diff-total').textContent = '-'; el('summary-diff-total').className = 'summary-diff'; }
-    if (el('summary-diff-per')) { el('summary-diff-per').textContent = '-'; el('summary-diff-per').className = 'summary-diff'; }
   }
 }
 
 // 割合の計算と表示更新
-function updateRatioDisplay(results, actualResults, inputs) {
+function updateRatioDisplay(results, actualResults) {
   if (!actualResults) return;
 
-  // チーム別予想 vs 実際
   [
     { key: 'daily', exp: results.daily, act: actualResults.daily },
     { key: 'voice', exp: results.voice, act: actualResults.voice },
     { key: 'coaching', exp: results.coaching, act: actualResults.coaching }
   ].forEach(({ key, exp, act }) => {
+    // テーブル列
     const expEl = document.getElementById('exp-' + key);
     const actEl = document.getElementById('act-' + key);
-    const expPerEl = document.getElementById('exp-per-' + key);
-    const actPerEl = document.getElementById('act-per-' + key);
     const ratioEl = document.getElementById('ratio-' + key);
-
     if (expEl) expEl.textContent = formatNumber(exp.total) + '円';
     if (actEl) actEl.textContent = formatNumber(act.total) + '円';
-    if (expPerEl) expPerEl.textContent = formatNumber(exp.per) + '円';
-    if (actPerEl) actPerEl.textContent = formatNumber(act.per) + '円';
-
     if (ratioEl) {
       if (exp.total > 0) {
         const r = (act.total / exp.total) * 100;
@@ -271,64 +239,46 @@ function updateRatioDisplay(results, actualResults, inputs) {
         ratioEl.className = '';
       }
     }
+
+    // チーム別割合ブロック
+    const ratioValueEl = document.getElementById('ratio-value-' + key);
+    const ratioDiffEl = document.getElementById('ratio-diff-' + key);
+    const ratioJudgeEl = document.getElementById('ratio-judge-' + key);
+    if (!ratioValueEl || !ratioDiffEl || !ratioJudgeEl) return;
+
+    if (exp.total <= 0) {
+      ratioValueEl.textContent = '-';
+      ratioValueEl.className = 'ratio-value';
+      ratioDiffEl.textContent = '-';
+      ratioJudgeEl.textContent = '-';
+      ratioJudgeEl.className = 'ratio-judge';
+      return;
+    }
+
+    const ratio = (act.total / exp.total) * 100;
+    const diff = act.total - exp.total;
+    ratioValueEl.textContent = ratio.toFixed(1) + '%';
+    ratioValueEl.className = 'ratio-value' + (ratio > 100 ? ' over' : ratio < 100 ? ' under' : ' exact');
+    ratioDiffEl.textContent = (diff >= 0 ? '+' : '') + formatNumber(diff) + '円';
+    ratioDiffEl.className = 'ratio-diff' + (diff > 0 ? ' over' : diff < 0 ? ' under' : ' exact');
+    ratioJudgeEl.textContent = ratio > 100 ? '超過' : ratio < 100 ? '予算内' : '同額';
+    ratioJudgeEl.className = 'ratio-judge' + (ratio > 100 ? ' over' : ratio < 100 ? ' under' : ' exact');
   });
-
-  // 全体の割合・差異
-  const ratioEl = document.getElementById('ratio-value');
-  const diffEl = document.getElementById('ratio-diff');
-  const judgeEl = document.getElementById('ratio-judge');
-
-  if (!ratioEl || !diffEl || !judgeEl) return;
-
-  const expectedTotal = results.total;
-  const actualTotal = actualResults.total;
-
-  if (expectedTotal <= 0) {
-    ratioEl.textContent = '-';
-    ratioEl.className = 'ratio-value';
-    diffEl.textContent = '-';
-    judgeEl.textContent = '-';
-    judgeEl.className = 'ratio-judge';
-    return;
-  }
-
-  const ratio = (actualTotal / expectedTotal) * 100;
-  const diff = actualTotal - expectedTotal;
-
-  ratioEl.textContent = ratio.toFixed(1) + '%';
-  ratioEl.className = 'ratio-value' + (ratio > 100 ? ' over' : ratio < 100 ? ' under' : ' exact');
-
-  const diffSign = diff >= 0 ? '+' : '';
-  diffEl.textContent = diffSign + formatNumber(diff) + '円';
-  diffEl.className = 'ratio-diff' + (diff > 0 ? ' over' : diff < 0 ? ' under' : ' exact');
-
-  judgeEl.textContent = ratio > 100 ? '超過' : ratio < 100 ? '予算内' : '同額';
-  judgeEl.className = 'ratio-judge' + (ratio > 100 ? ' over' : ratio < 100 ? ' under' : ' exact');
 }
 
 // バリデーション結果の表示
-function updateValidationMessages(inputs) {
+function updateValidationMessages() {
   const wrap = document.getElementById('validationWrap');
   if (!wrap) return;
-
-  const errs = [];
-  if (inputs.students <= 0) errs.push('在籍生徒数は1以上を入力してください');
-  if (inputs.businessDays < 1 || inputs.businessDays > 31) errs.push('営業日数は1〜31の範囲で入力してください');
-
-  if (errs.length === 0) {
-    wrap.classList.add('hidden');
-    wrap.innerHTML = '';
-    return;
-  }
-  wrap.classList.remove('hidden');
-  wrap.innerHTML = '<div class="validation-errors">' + errs.map(e => `<p>${e}</p>`).join('') + '</div>';
+  wrap.classList.add('hidden');
+  wrap.innerHTML = '';
 }
 
 // メイン計算・表示更新
 function runCalculation() {
   const inputs = getInputs();
 
-  updateValidationMessages(inputs);
+  updateValidationMessages();
 
   // 予想: 日報・音声は講師別稼働から計算
   const dailyInstructors = getInstructors('daily');
@@ -336,39 +286,30 @@ function runCalculation() {
   const dailyPredTotal = calcInstructorTotal(dailyInstructors);
   const voicePredTotal = calcInstructorTotal(voiceInstructors);
 
-  const { students, coaching } = inputs;
+  const { coaching } = inputs;
   const coachingTotal = (coaching.students1500 * 1500 + coaching.students1750 * 1750) * coaching.count;
   const grandTotal = dailyPredTotal + voicePredTotal + coachingTotal;
 
   const results = {
-    daily: {
-      per: students > 0 ? dailyPredTotal / students : 0,
-      total: dailyPredTotal
-    },
-    voice: {
-      per: students > 0 ? voicePredTotal / students : 0,
-      total: voicePredTotal
-    },
-    coaching: { per: null, total: coachingTotal },
-    perStudent: students > 0 ? grandTotal / students : 0,
+    daily: { total: dailyPredTotal },
+    voice: { total: voicePredTotal },
+    coaching: { total: coachingTotal },
     total: grandTotal
   };
 
-  // 実際: チーム別支払い額 ÷ 生徒数
   const payments = getActualPayments();
   const actualResults = {
-    daily: { total: payments.daily, per: students > 0 ? payments.daily / students : 0 },
-    voice: { total: payments.voice, per: students > 0 ? payments.voice / students : 0 },
-    coaching: { total: payments.coaching, per: students > 0 ? payments.coaching / students : 0 },
-    total: payments.total,
-    perStudent: students > 0 ? payments.total / students : 0
+    daily: { total: payments.daily },
+    voice: { total: payments.voice },
+    coaching: { total: payments.coaching },
+    total: payments.total
   };
 
   renderInstructorDisplay('daily');
   renderInstructorDisplay('voice');
   updateOverview(inputs, results, dailyInstructors, voiceInstructors);
   updateResults(results, actualResults);
-  updateRatioDisplay(results, actualResults, inputs);
+  updateRatioDisplay(results, actualResults);
 }
 
 // デバウンス用
@@ -424,29 +365,24 @@ function exportToCsv() {
   // 予想計算（講師リスト方式）
   const dailyPredTotal = calcInstructorTotal(dailyInstructors);
   const voicePredTotal = calcInstructorTotal(voiceInstructors);
-  const { students, coaching } = inputs;
+  const { coaching } = inputs;
   const coachingTotal = (coaching.students1500 * 1500 + coaching.students1750 * 1750) * coaching.count;
   const results = {
-    daily: { per: students > 0 ? dailyPredTotal / students : 0, total: dailyPredTotal },
-    voice: { per: students > 0 ? voicePredTotal / students : 0, total: voicePredTotal },
-    coaching: { per: null, total: coachingTotal },
-    perStudent: students > 0 ? (dailyPredTotal + voicePredTotal + coachingTotal) / students : 0,
+    daily: { total: dailyPredTotal },
+    voice: { total: voicePredTotal },
+    coaching: { total: coachingTotal },
     total: dailyPredTotal + voicePredTotal + coachingTotal
   };
   const payments = getActualPayments();
   const actualResults = {
-    daily: { total: payments.daily, per: students > 0 ? payments.daily / students : 0 },
-    voice: { total: payments.voice, per: students > 0 ? payments.voice / students : 0 },
-    coaching: { total: payments.coaching, per: students > 0 ? payments.coaching / students : 0 },
-    total: payments.total,
-    perStudent: students > 0 ? payments.total / students : 0
+    daily: { total: payments.daily },
+    voice: { total: payments.voice },
+    coaching: { total: payments.coaching },
+    total: payments.total
   };
 
   const monthEl = document.getElementById('targetMonth');
   const label = monthEl?.value || getCurrentMonthStr();
-  const ratioEl = document.getElementById('ratio-value');
-  const diffEl = document.getElementById('ratio-diff');
-  const judgeEl = document.getElementById('ratio-judge');
 
   const escapeCsv = (v) => {
     const s = String(v ?? '');
@@ -456,8 +392,6 @@ function exportToCsv() {
   const rows = [
     ['項目', '予想', '実際'],
     ['対象月', label, ''],
-    ['在籍生徒数', inputs.students + '人', ''],
-    ['営業日数', inputs.businessDays + '日', ''],
     [''],
     ['▼ 日報チーム（予想・講師別内訳）', '', ''],
     ...dailyInstructors.map(i => [`　${i.name || '名前未入力'} ${i.hours}h × ${formatNumber(i.rate)}円/h`, formatNumber(i.hours * i.rate) + '円', '']),
@@ -472,12 +406,14 @@ function exportToCsv() {
     ['コーチングチーム 対応回数', coaching.count + '回/人/月', ''],
     ['コーチングチーム 合計', formatNumber(results.coaching.total), formatNumber(actualResults.coaching.total)],
     [''],
-    ['生徒1人あたり合計', formatNumber(results.perStudent) + '円', formatNumber(actualResults.perStudent) + '円'],
     ['人件費総額', formatNumber(results.total) + '円', formatNumber(actualResults.total) + '円'],
     [''],
-    ['割合', ratioEl?.textContent || '-', ''],
-    ['差異', diffEl?.textContent || '-', ''],
-    ['判定', judgeEl?.textContent || '-', '']
+    ['日報チーム 割合', document.getElementById('ratio-value-daily')?.textContent || '-', ''],
+    ['日報チーム 差異', document.getElementById('ratio-diff-daily')?.textContent || '-', ''],
+    ['音声チーム 割合', document.getElementById('ratio-value-voice')?.textContent || '-', ''],
+    ['音声チーム 差異', document.getElementById('ratio-diff-voice')?.textContent || '-', ''],
+    ['コーチングチーム 割合', document.getElementById('ratio-value-coaching')?.textContent || '-', ''],
+    ['コーチングチーム 差異', document.getElementById('ratio-diff-coaching')?.textContent || '-', '']
   ];
 
   const csv = '\uFEFF' + rows.map(r => r.map(escapeCsv).join(',')).join('\n');
@@ -505,13 +441,11 @@ function saveCurrentData() {
 
   const inputs = getInputs();
   const payments = getActualPayments();
-  const students = inputs.students || 0;
   const actualResults = {
-    daily: { total: payments.daily, per: students > 0 ? payments.daily / students : 0 },
-    voice: { total: payments.voice, per: students > 0 ? payments.voice / students : 0 },
-    coaching: { total: payments.coaching, per: students > 0 ? payments.coaching / students : 0 },
-    total: payments.total,
-    perStudent: students > 0 ? payments.total / students : 0
+    daily: { total: payments.daily },
+    voice: { total: payments.voice },
+    coaching: { total: payments.coaching },
+    total: payments.total
   };
 
   const data = {
@@ -606,8 +540,6 @@ function showSaveMessage(text, type) {
 function loadSavedData(data) {
   const { inputs } = data;
   const ids = [
-    ['students', inputs.students],
-    ['businessDays', inputs.businessDays],
     ['coaching-students-1500', inputs.coaching?.students1500],
     ['coaching-students-1750', inputs.coaching?.students1750],
     ['coaching-count', inputs.coaching?.count > 0 ? inputs.coaching.count : undefined],
@@ -675,8 +607,6 @@ function loadDraft() {
     const { inputs, targetMonth } = d;
 
     const ids = [
-      ['students', inputs.students],
-      ['businessDays', inputs.businessDays],
       ['coaching-students-1500', inputs.coaching?.students1500],
       ['coaching-students-1750', inputs.coaching?.students1750],
       ['coaching-count', inputs.coaching?.count > 0 ? inputs.coaching.count : undefined],
@@ -912,13 +842,11 @@ function init() {
       const [year, month] = monthVal.split('-').map(Number);
       const inputs = getInputs();
       const payments = getActualPayments();
-      const students = inputs.students || 0;
       const actualResults = {
-        daily: { total: payments.daily, per: students > 0 ? payments.daily / students : 0 },
-        voice: { total: payments.voice, per: students > 0 ? payments.voice / students : 0 },
-        coaching: { total: payments.coaching, per: students > 0 ? payments.coaching / students : 0 },
-        total: payments.total,
-        perStudent: students > 0 ? payments.total / students : 0
+        daily: { total: payments.daily },
+        voice: { total: payments.voice },
+        coaching: { total: payments.coaching },
+        total: payments.total
       };
       const data = {
         year, month, label: `${year}年${month}月`,
@@ -970,7 +898,7 @@ function init() {
   }, 150);
 
   const ids = [
-    'students', 'businessDays', 'targetMonth',
+    'targetMonth',
     'coaching-students-1500', 'coaching-students-1750', 'coaching-count',
     'actual-daily-payment', 'actual-voice-payment', 'actual-coaching-payment'
   ];
@@ -1036,14 +964,6 @@ window.LaborCostCalc = {
   sendToSheets,
   setInputs(values) {
     const map = {
-      students: 'students',
-      businessDays: 'businessDays',
-      dailyPrice: 'daily-price',
-      dailyMins: 'daily-mins',
-      dailyRate: 'daily-rate',
-      voicePrice: 'voice-price',
-      voiceMins: 'voice-mins',
-      voiceRate: 'voice-rate',
       coachingStudents1500: 'coaching-students-1500',
       coachingStudents1750: 'coaching-students-1750',
       coachingCount: 'coaching-count',
