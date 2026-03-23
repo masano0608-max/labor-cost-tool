@@ -14,6 +14,7 @@
 
 var SHEET_NAME           = '人件費データ';
 var INSTRUCTOR_SHEET_NAME = '講師マスタ';
+var ACTUAL_SHEET_NAME    = '実績データ';
 
 // ── GET: 講師データ取得 / 動作確認 ──────────────────────
 
@@ -21,6 +22,9 @@ function doGet(e) {
   var type = (e && e.parameter && e.parameter.type) || '';
   if (type === 'instructors') {
     return getInstructorData();
+  }
+  if (type === 'actuals') {
+    return getActualData();
   }
   return createJsonResponse({ status: 'ok', message: '人件費ツール連携API' });
 }
@@ -35,6 +39,38 @@ function getInstructorData() {
     var sheet = ss.getSheetByName(INSTRUCTOR_SHEET_NAME);
     if (!sheet) {
       return createJsonResponse({ instructors: [], error: '「' + INSTRUCTOR_SHEET_NAME + '」シートが見つかりません。メニューからテンプレートを初期化してください。' });
+    }
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) {
+      return createJsonResponse({ instructors: [] });
+    }
+    var data = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+    var instructors = data
+      .filter(function(row) { return row[0] && String(row[0]).trim(); })
+      .map(function(row) {
+        return {
+          name:  String(row[0]).trim(),
+          team:  String(row[1]).trim(),
+          rate:  parseInt(row[2], 10) || 0,
+          hours: parseFloat(row[3]) || ''
+        };
+      });
+    return createJsonResponse({ instructors: instructors });
+  } catch (err) {
+    return createJsonResponse({ instructors: [], error: String(err.message) });
+  }
+}
+
+/**
+ * 「実績データ」シートから実績講師データを JSON で返す
+ * GET ?type=actuals で呼び出す
+ */
+function getActualData() {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName(ACTUAL_SHEET_NAME);
+    if (!sheet) {
+      return createJsonResponse({ instructors: [], error: '「' + ACTUAL_SHEET_NAME + '」シートが見つかりません。メニューからテンプレートを初期化してください。' });
     }
     var lastRow = sheet.getLastRow();
     if (lastRow < 2) {
@@ -137,6 +173,34 @@ function setupTemplate() {
     .build();
   masterSheet.getRange(2, 2, 100, 1).setDataValidation(teamRule);
 
+  // ── 実績データ シート ──
+  var actualSheet = ss.getSheetByName(ACTUAL_SHEET_NAME);
+  if (!actualSheet) {
+    actualSheet = ss.insertSheet(ACTUAL_SHEET_NAME);
+  } else {
+    actualSheet.clearContents();
+    actualSheet.clearFormats();
+  }
+
+  var actualHeaders = ['講師名', 'チーム', '時給（円/h）', '稼働時間（h）'];
+  actualSheet.getRange(1, 1, 1, actualHeaders.length).setValues([actualHeaders]);
+  actualSheet.getRange(1, 1, 1, actualHeaders.length)
+    .setBackground('#0891b2')
+    .setFontColor('#ffffff')
+    .setFontWeight('bold')
+    .setHorizontalAlignment('center');
+
+  actualSheet.setColumnWidth(1, 160);
+  actualSheet.setColumnWidth(2, 80);
+  actualSheet.setColumnWidth(3, 120);
+  actualSheet.setColumnWidth(4, 120);
+
+  var actualTeamRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['日報', '音声'], true)
+    .setAllowInvalid(false)
+    .build();
+  actualSheet.getRange(2, 2, 100, 1).setDataValidation(actualTeamRule);
+
   // ── 人件費データ シート ──
   var dataSheet = getOrCreateSheet();
   if (dataSheet.getLastRow() === 0) {
@@ -147,7 +211,7 @@ function setupTemplate() {
       .setFontWeight('bold');
   }
 
-  ui.alert('セットアップ完了', '「' + INSTRUCTOR_SHEET_NAME + '」シートにサンプルデータを作成しました。\n\n講師名・チーム（日報/音声）・時給を入力してください。\nウェブアプリを再デプロイ後、人件費ツールから自動取得できます。', ui.ButtonSet.OK);
+  ui.alert('セットアップ完了', '「' + INSTRUCTOR_SHEET_NAME + '」「' + ACTUAL_SHEET_NAME + '」シートを作成しました。\n\n・講師マスタ: 講師名・チーム（日報/音声）・時給を入力（予想用）\n・実績データ: 実際の支払い実績を入力（稼働時間まで入力必須）\n\nウェブアプリを再デプロイ後、人件費ツールから自動取得できます。', ui.ButtonSet.OK);
 }
 
 // ── 共通ユーティリティ ────────────────────────────────────

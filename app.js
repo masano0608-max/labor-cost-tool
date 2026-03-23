@@ -126,11 +126,21 @@ function getInputs() {
   return { coaching };
 }
 
-// 実際のチーム別支払い額を取得
+// 実際のコーチング入力値を取得
+function getCoachingActualInputs() {
+  return {
+    students1500: parseInt(document.getElementById('coaching-actual-students-1500')?.value, 10) || 0,
+    students1750: parseInt(document.getElementById('coaching-actual-students-1750')?.value, 10) || 0,
+    count: parseInt(document.getElementById('coaching-actual-count')?.value, 10) || 0,
+  };
+}
+
+// 実際のチーム別支払い額を取得（講師リストから計算）
 function getActualPayments() {
-  const daily = parseInt(document.getElementById('actual-daily-payment')?.value, 10) || 0;
-  const voice = parseInt(document.getElementById('actual-voice-payment')?.value, 10) || 0;
-  const coaching = parseInt(document.getElementById('actual-coaching-payment')?.value, 10) || 0;
+  const daily = calcInstructorTotal(getInstructors('daily-actual'));
+  const voice = calcInstructorTotal(getInstructors('voice-actual'));
+  const act = getCoachingActualInputs();
+  const coaching = (act.students1500 * 1500 + act.students1750 * 1750) * act.count;
   return { daily, voice, coaching, total: daily + voice + coaching };
 }
 
@@ -266,8 +276,51 @@ function runCalculation() {
 
   renderInstructorDisplay('daily');
   renderInstructorDisplay('voice');
+  renderInstructorDisplay('daily-actual');
+  renderInstructorDisplay('voice-actual');
   updateResults(results, actualResults);
   updateRatioDisplay(results, actualResults);
+  updatePersonComparison('daily', dailyInstructors, getInstructors('daily-actual'));
+  updatePersonComparison('voice', voiceInstructors, getInstructors('voice-actual'));
+}
+
+// 人ごと比較表示
+function updatePersonComparison(team, predList, actList) {
+  const container = document.getElementById(team + '-person-comparison');
+  if (!container) return;
+
+  const allNames = [...new Set([
+    ...predList.map(i => i.name).filter(Boolean),
+    ...actList.map(i => i.name).filter(Boolean)
+  ])];
+
+  if (allNames.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const rows = allNames.map(name => {
+    const pred = predList.find(i => i.name === name);
+    const act  = actList.find(i => i.name === name);
+    const predAmt = pred ? (pred.hours * pred.rate) : 0;
+    const actAmt  = act  ? (act.hours  * act.rate)  : 0;
+    const diff = actAmt - predAmt;
+    const ratio = predAmt > 0 ? (actAmt / predAmt * 100).toFixed(1) + '%' : '-';
+    const cls = diff > 0 ? 'over' : diff < 0 ? 'under' : 'exact';
+    return `<div class="pcmp-row">
+      <span>${name}</span>
+      <span>${formatNumber(predAmt)}円</span>
+      <span>${formatNumber(actAmt)}円</span>
+      <span class="${cls}">${(diff >= 0 ? '+' : '') + formatNumber(diff)}円</span>
+      <span class="${cls}">${ratio}</span>
+    </div>`;
+  });
+
+  container.innerHTML = `<p class="pcmp-title">人ごと比較</p>
+    <div class="pcmp-table">
+      <div class="pcmp-row pcmp-header"><span>講師名</span><span>予想</span><span>実際</span><span>差額</span><span>割合</span></div>
+      ${rows.join('')}
+    </div>`;
 }
 
 // デバウンス用
@@ -319,6 +372,9 @@ function exportToCsv() {
   const inputs = getInputs();
   const dailyInstructors = getInstructors('daily');
   const voiceInstructors = getInstructors('voice');
+  const dailyActualInstructors = getInstructors('daily-actual');
+  const voiceActualInstructors = getInstructors('voice-actual');
+  const coachingActual = getCoachingActualInputs();
 
   // 予想計算（講師リスト方式）
   const dailyPredTotal = calcInstructorTotal(dailyInstructors);
@@ -351,18 +407,22 @@ function exportToCsv() {
     ['項目', '予想', '実際'],
     ['対象月', label, ''],
     [''],
-    ['▼ 日報チーム（予想・講師別内訳）', '', ''],
+    ['▼ 日報チーム 講師別内訳（予想）', '', ''],
     ...dailyInstructors.map(i => [`　${i.name || '名前未入力'} ${i.hours}h × ${formatNumber(i.rate)}円/h`, formatNumber(i.hours * i.rate) + '円', '']),
-    ['日報チーム 予想合計', formatNumber(results.daily.total) + '円', formatNumber(actualResults.daily.total) + '円'],
+    ['▼ 日報チーム 講師別内訳（実際）', '', ''],
+    ...dailyActualInstructors.map(i => [`　${i.name || '名前未入力'} ${i.hours}h × ${formatNumber(i.rate)}円/h`, '', formatNumber(i.hours * i.rate) + '円']),
+    ['日報チーム 合計', formatNumber(results.daily.total) + '円', formatNumber(actualResults.daily.total) + '円'],
     [''],
-    ['▼ 音声チーム（予想・講師別内訳）', '', ''],
+    ['▼ 音声チーム 講師別内訳（予想）', '', ''],
     ...voiceInstructors.map(i => [`　${i.name || '名前未入力'} ${i.hours}h × ${formatNumber(i.rate)}円/h`, formatNumber(i.hours * i.rate) + '円', '']),
-    ['音声チーム 予想合計', formatNumber(results.voice.total) + '円', formatNumber(actualResults.voice.total) + '円'],
+    ['▼ 音声チーム 講師別内訳（実際）', '', ''],
+    ...voiceActualInstructors.map(i => [`　${i.name || '名前未入力'} ${i.hours}h × ${formatNumber(i.rate)}円/h`, '', formatNumber(i.hours * i.rate) + '円']),
+    ['音声チーム 合計', formatNumber(results.voice.total) + '円', formatNumber(actualResults.voice.total) + '円'],
     [''],
-    ['コーチングチーム（1500円） 生徒数', coaching.students1500 + '人', ''],
-    ['コーチングチーム（1750円） 生徒数', coaching.students1750 + '人', ''],
-    ['コーチングチーム 対応回数', coaching.count + '回/人/月', ''],
-    ['コーチングチーム 合計', formatNumber(results.coaching.total), formatNumber(actualResults.coaching.total)],
+    ['コーチングチーム（1500円） 生徒数', coaching.students1500 + '人', coachingActual.students1500 + '人'],
+    ['コーチングチーム（1750円） 生徒数', coaching.students1750 + '人', coachingActual.students1750 + '人'],
+    ['コーチングチーム 対応回数', coaching.count + '回/人/月', coachingActual.count + '回/人/月'],
+    ['コーチングチーム 合計', formatNumber(results.coaching.total) + '円', formatNumber(actualResults.coaching.total) + '円'],
     [''],
     ['人件費総額', formatNumber(results.total) + '円', formatNumber(actualResults.total) + '円'],
     [''],
@@ -411,10 +471,13 @@ function saveCurrentData() {
     month,
     label: `${year}年${month}月`,
     inputs,
+    coachingActual: getCoachingActualInputs(),
     payments,
     actualResults,
     dailyInstructors: getInstructors('daily'),
-    voiceInstructors: getInstructors('voice')
+    voiceInstructors: getInstructors('voice'),
+    dailyActualInstructors: getInstructors('daily-actual'),
+    voiceActualInstructors: getInstructors('voice-actual')
   };
   saveToHistory(data);
 
@@ -466,14 +529,14 @@ function showSaveMessage(text, type) {
 
 // 保存データをフォームに読み込み
 function loadSavedData(data) {
-  const { inputs } = data;
+  const { inputs, coachingActual } = data;
   const ids = [
     ['coaching-students-1500', inputs.coaching?.students1500],
     ['coaching-students-1750', inputs.coaching?.students1750],
     ['coaching-count', inputs.coaching?.count > 0 ? inputs.coaching.count : undefined],
-    ['actual-daily-payment', data.payments?.daily ?? 0],
-    ['actual-voice-payment', data.payments?.voice ?? 0],
-    ['actual-coaching-payment', data.payments?.coaching ?? 0]
+    ['coaching-actual-students-1500', coachingActual?.students1500],
+    ['coaching-actual-students-1750', coachingActual?.students1750],
+    ['coaching-actual-count', coachingActual?.count > 0 ? coachingActual.count : undefined],
   ];
   ids.forEach(([id, val]) => {
     const el = document.getElementById(id);
@@ -489,6 +552,10 @@ function loadSavedData(data) {
   if (dailyCont) { dailyCont.innerHTML = ''; (data.dailyInstructors || []).forEach(i => addInstructor('daily', i)); }
   const voiceCont = document.getElementById('voice-instructors');
   if (voiceCont) { voiceCont.innerHTML = ''; (data.voiceInstructors || []).forEach(i => addInstructor('voice', i)); }
+  const dailyActCont = document.getElementById('daily-actual-instructors');
+  if (dailyActCont) { dailyActCont.innerHTML = ''; (data.dailyActualInstructors || []).forEach(i => addInstructor('daily-actual', i)); }
+  const voiceActCont = document.getElementById('voice-actual-instructors');
+  if (voiceActCont) { voiceActCont.innerHTML = ''; (data.voiceActualInstructors || []).forEach(i => addInstructor('voice-actual', i)); }
 
   runCalculation();
 }
@@ -511,15 +578,17 @@ function tryLoadFromSession() {
 // 下書きを保存
 function saveDraft() {
   const inputs = getInputs();
-  const payments = getActualPayments();
+  const coachingActual = getCoachingActualInputs();
   const monthEl = document.getElementById('targetMonth');
   try {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({
       targetMonth: monthEl?.value || '',
       inputs,
-      payments,
+      coachingActual,
       dailyInstructors: getInstructors('daily'),
       voiceInstructors: getInstructors('voice'),
+      dailyActualInstructors: getInstructors('daily-actual'),
+      voiceActualInstructors: getInstructors('voice-actual'),
       savedAt: Date.now()
     }));
   } catch {}
@@ -532,15 +601,15 @@ function loadDraft() {
     if (!raw) return;
     const d = JSON.parse(raw);
     if (!d.inputs) return;
-    const { inputs, targetMonth } = d;
+    const { inputs, coachingActual, targetMonth } = d;
 
     const ids = [
       ['coaching-students-1500', inputs.coaching?.students1500],
       ['coaching-students-1750', inputs.coaching?.students1750],
       ['coaching-count', inputs.coaching?.count > 0 ? inputs.coaching.count : undefined],
-      ['actual-daily-payment', d.payments?.daily ?? 0],
-      ['actual-voice-payment', d.payments?.voice ?? 0],
-      ['actual-coaching-payment', d.payments?.coaching ?? 0]
+      ['coaching-actual-students-1500', coachingActual?.students1500],
+      ['coaching-actual-students-1750', coachingActual?.students1750],
+      ['coaching-actual-count', coachingActual?.count > 0 ? coachingActual.count : undefined],
     ];
     ids.forEach(([id, val]) => {
       const el = document.getElementById(id);
@@ -554,6 +623,10 @@ function loadDraft() {
     if (dailyCont) { dailyCont.innerHTML = ''; (d.dailyInstructors || []).forEach(i => addInstructor('daily', i)); }
     const voiceCont = document.getElementById('voice-instructors');
     if (voiceCont) { voiceCont.innerHTML = ''; (d.voiceInstructors || []).forEach(i => addInstructor('voice', i)); }
+    const dailyActCont = document.getElementById('daily-actual-instructors');
+    if (dailyActCont) { dailyActCont.innerHTML = ''; (d.dailyActualInstructors || []).forEach(i => addInstructor('daily-actual', i)); }
+    const voiceActCont = document.getElementById('voice-actual-instructors');
+    if (voiceActCont) { voiceActCont.innerHTML = ''; (d.voiceActualInstructors || []).forEach(i => addInstructor('voice-actual', i)); }
   } catch {}
 }
 
@@ -608,6 +681,39 @@ async function loadInstructorsFromGas(silent) {
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'GASから自動読み込み'; }
   }
+}
+
+// GASから実績データを読み込み
+async function loadActualsFromGas(team) {
+  const msgId = team + '-actual-import-msg';
+  const storedUrl = (localStorage.getItem(SHEETS_URL_KEY) || '').trim();
+  const urls = [...new Set([storedUrl, DEFAULT_GAS_URL].filter(Boolean))];
+
+  let json = null;
+  let lastErr = null;
+  for (const url of urls) {
+    try {
+      const res = await fetch(url + '?type=actuals', { credentials: 'omit' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      json = await res.json();
+      break;
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+
+  if (!json) {
+    showImportMessage(msgId, '取得に失敗しました: ' + (lastErr?.message || ''), 'error');
+    return;
+  }
+
+  const filtered = (json.instructors || []).filter(r => isTeamMatch(r.team, team));
+  if (filtered.length === 0) {
+    showImportMessage(msgId, json.error || '実績データがありません', 'error');
+    return;
+  }
+  populateTeamFromRows(team + '-actual', filtered);
+  showImportMessage(msgId, `${filtered.length}人を読み込みました`, 'success');
 }
 
 // ── ここまでGAS自動連携 ───────────────────────────────
@@ -785,9 +891,13 @@ function init() {
       };
       const data = {
         year, month, label: `${year}年${month}月`,
-        inputs, payments, actualResults,
+        inputs,
+        coachingActual: getCoachingActualInputs(),
+        payments, actualResults,
         dailyInstructors: getInstructors('daily'),
-        voiceInstructors: getInstructors('voice')
+        voiceInstructors: getInstructors('voice'),
+        dailyActualInstructors: getInstructors('daily-actual'),
+        voiceActualInstructors: getInstructors('voice-actual')
       };
       sendToSheets(data);
     });
@@ -818,6 +928,11 @@ function init() {
     fetchBtn.addEventListener('click', () => loadInstructorsFromGas(false));
   }
 
+  // GASから実績データ読み込みボタン
+  document.querySelectorAll('[data-fetch-actual]').forEach(btn => {
+    btn.addEventListener('click', () => loadActualsFromGas(btn.dataset.fetchActual));
+  });
+
   // ページ読み込み時に自動取得（常に実行）
   loadInstructorsFromGas(true);
 
@@ -835,7 +950,7 @@ function init() {
   const ids = [
     'targetMonth',
     'coaching-students-1500', 'coaching-students-1750', 'coaching-count',
-    'actual-daily-payment', 'actual-voice-payment', 'actual-coaching-payment'
+    'coaching-actual-students-1500', 'coaching-actual-students-1750', 'coaching-actual-count'
   ];
   ids.forEach(id => {
     const el = document.getElementById(id);

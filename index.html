@@ -68,7 +68,7 @@
           <div class="team-card-header">
             <h3>日報チーム</h3>
             <input type="file" id="daily-csv-input" accept=".csv" style="display:none">
-            <button type="button" class="btn-import-team" data-import-team="daily">スプシから読み込む</button>
+            <button type="button" class="btn-import-team" data-import-team="daily">予想をスプシから読み込む</button>
             <span id="daily-import-msg" class="import-message"></span>
           </div>
           <div class="expected-actual-row">
@@ -76,13 +76,7 @@
               <span class="ea-label">予想（講師別稼働）</span>
               <p class="team-desc" style="margin-bottom:8px;"><a href="https://docs.google.com/spreadsheets/d/1vOz3q3aJtVxTW-gCdTuG5nfqz6OYpDgw1x5cy2LbJ5o/edit?gid=1037299528#gid=1037299528" target="_blank" rel="noopener">シフト表を開く</a></p>
               <div class="instructor-list-header">
-                <span>講師名</span>
-                <span>稼働時間(h)</span>
-                <span></span>
-                <span>時給(円/h)</span>
-                <span></span>
-                <span>小計</span>
-                <span></span>
+                <span>講師名</span><span>稼働時間(h)</span><span></span><span>時給(円/h)</span><span></span><span>小計</span><span></span>
               </div>
               <div id="daily-instructors"></div>
               <button type="button" class="btn-add-instructor" data-add-instructor="daily">＋ 講師を追加</button>
@@ -91,7 +85,24 @@
                 <div class="instructor-total-line">予測合計: <strong id="daily-instructor-total">0</strong>円</div>
               </div>
             </div>
+            <div class="ea-block actual">
+              <span class="ea-label">実際（支払い実績）</span>
+              <div class="actual-load-bar">
+                <button type="button" class="btn-fetch-actual" data-fetch-actual="daily">GASから読み込み</button>
+                <span id="daily-actual-import-msg" class="import-message"></span>
+              </div>
+              <div class="instructor-list-header">
+                <span>講師名</span><span>稼働時間(h)</span><span></span><span>時給(円/h)</span><span></span><span>小計</span><span></span>
+              </div>
+              <div id="daily-actual-instructors"></div>
+              <button type="button" class="btn-add-instructor" data-add-instructor="daily-actual">＋ 講師を追加</button>
+              <div class="instructor-result">
+                <div class="instructor-formula" id="daily-actual-formula"><span class="formula-empty">（講師を追加してください）</span></div>
+                <div class="instructor-total-line">実際合計: <strong id="daily-actual-instructor-total">0</strong>円</div>
+              </div>
+            </div>
           </div>
+          <div id="daily-person-comparison" class="person-comparison-wrap"></div>
         </div>
 
         <!-- 音声チーム -->
@@ -99,7 +110,7 @@
           <div class="team-card-header">
             <h3>音声チーム</h3>
             <input type="file" id="voice-csv-input" accept=".csv" style="display:none">
-            <button type="button" class="btn-import-team" data-import-team="voice">スプシから読み込む</button>
+            <button type="button" class="btn-import-team" data-import-team="voice">予想をスプシから読み込む</button>
             <span id="voice-import-msg" class="import-message"></span>
           </div>
           <div class="expected-actual-row">
@@ -107,13 +118,7 @@
               <span class="ea-label">予想（講師別稼働）</span>
               <p class="team-desc" style="margin-bottom:8px;"><a href="https://docs.google.com/spreadsheets/d/1vOz3q3aJtVxTW-gCdTuG5nfqz6OYpDgw1x5cy2LbJ5o/edit?gid=1037299528#gid=1037299528" target="_blank" rel="noopener">シフト表を開く</a></p>
               <div class="instructor-list-header">
-                <span>講師名</span>
-                <span>稼働時間(h)</span>
-                <span></span>
-                <span>時給(円/h)</span>
-                <span></span>
-                <span>小計</span>
-                <span></span>
+                <span>講師名</span><span>稼働時間(h)</span><span></span><span>時給(円/h)</span><span></span><span>小計</span><span></span>
               </div>
               <div id="voice-instructors"></div>
               <button type="button" class="btn-add-instructor" data-add-instructor="voice">＋ 講師を追加</button>
@@ -122,7 +127,24 @@
                 <div class="instructor-total-line">予測合計: <strong id="voice-instructor-total">0</strong>円</div>
               </div>
             </div>
+            <div class="ea-block actual">
+              <span class="ea-label">実際（支払い実績）</span>
+              <div class="actual-load-bar">
+                <button type="button" class="btn-fetch-actual" data-fetch-actual="voice">GASから読み込み</button>
+                <span id="voice-actual-import-msg" class="import-message"></span>
+              </div>
+              <div class="instructor-list-header">
+                <span>講師名</span><span>稼働時間(h)</span><span></span><span>時給(円/h)</span><span></span><span>小計</span><span></span>
+              </div>
+              <div id="voice-actual-instructors"></div>
+              <button type="button" class="btn-add-instructor" data-add-instructor="voice-actual">＋ 講師を追加</button>
+              <div class="instructor-result">
+                <div class="instructor-formula" id="voice-actual-formula"><span class="formula-empty">（講師を追加してください）</span></div>
+                <div class="instructor-total-line">実際合計: <strong id="voice-actual-instructor-total">0</strong>円</div>
+              </div>
+            </div>
           </div>
+          <div id="voice-person-comparison" class="person-comparison-wrap"></div>
         </div>
 
         <!-- コーチングチーム -->
@@ -138,29 +160,17 @@
                 <label>対応回数（回/人/月）<input type="number" id="coaching-count" min="1" value="4"></label>
               </div>
             </div>
+            <div class="ea-block actual">
+              <span class="ea-label">実際</span>
+              <div class="input-group">
+                <label>1500円/回 の生徒数<input type="number" id="coaching-actual-students-1500" min="0" value="0"></label>
+                <label>1750円/回 の生徒数<input type="number" id="coaching-actual-students-1750" min="0" value="0"></label>
+                <label>対応回数（回/人/月）<input type="number" id="coaching-actual-count" min="1" value="4"></label>
+              </div>
+            </div>
           </div>
         </div>
 
-      </div>
-    </section>
-
-    <!-- 実際入力 -->
-    <section class="section">
-      <h2>実際の支払い</h2>
-      <p class="section-desc">各チームの実際の支払い額を入力してください。</p>
-      <div class="input-group">
-        <label>
-          日報チーム 支払い額（円）
-          <input type="number" id="actual-daily-payment" min="0" value="0" placeholder="日報チームの支払い総額">
-        </label>
-        <label>
-          音声チーム 支払い額（円）
-          <input type="number" id="actual-voice-payment" min="0" value="0" placeholder="音声チームの支払い総額">
-        </label>
-        <label>
-          コーチングチーム 支払い額（円）
-          <input type="number" id="actual-coaching-payment" min="0" value="0" placeholder="コーチングチームの支払い総額">
-        </label>
       </div>
     </section>
 
