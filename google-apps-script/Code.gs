@@ -163,48 +163,47 @@ function getOrCreateSheet() {
 
 function getHeaders() {
   return [
-    '対象月', '在籍生徒数', '営業日数',
-    '日報予想/人', '日報予想合計', '日報実際/人', '日報実際合計',
-    '音声予想/人', '音声予想合計', '音声実際/人', '音声実際合計',
-    'コーチング予想/人', 'コーチング予想合計', 'コーチング実際/人', 'コーチング実際合計',
-    '生徒1人あたり予想', '生徒1人あたり実際',
-    '人件費予想', '人件費実際', '割合', '差異', '判定',
+    '対象月',
+    '日報予想合計', '日報実際合計', '日報割合', '日報差異', '日報判定',
+    '音声予想合計', '音声実際合計', '音声割合', '音声差異', '音声判定',
+    'コーチング予想合計', 'コーチング実際合計', 'コーチング割合', 'コーチング差異', 'コーチング判定',
+    '人件費予想合計', '人件費実際合計',
     '送信日時'
   ];
 }
 
 function serializeRow(data) {
-  var r      = data.results       || {};
-  var ar     = data.actualResults || {};
-  var inputs = data.inputs        || {};
-  var ratio  = r.total > 0 ? ((ar.total || 0) / r.total * 100).toFixed(1) : '-';
-  var diff   = (ar.total || 0) - (r.total || 0);
-  var judge  = ratio === '-' ? '-' : (ratio > 100 ? '超過' : ratio < 100 ? '予算内' : '同額');
-  var diffStr = diff >= 0 ? '+' + diff : String(diff);
+  var r  = data.results       || {};
+  var ar = data.actualResults || {};
+
+  function teamRatio(exp, act) {
+    if (!exp || exp <= 0) return '-';
+    return (act / exp * 100).toFixed(1) + '%';
+  }
+  function teamDiff(exp, act) {
+    var d = (act || 0) - (exp || 0);
+    return (d >= 0 ? '+' : '') + d;
+  }
+  function teamJudge(exp, act) {
+    if (!exp || exp <= 0) return '-';
+    var ratio = act / exp * 100;
+    return ratio > 100 ? '超過' : ratio < 100 ? '予算内' : '同額';
+  }
+
+  var dailyExp = r.daily   ? (r.daily.total   || 0) : 0;
+  var dailyAct = ar.daily  ? (ar.daily.total  || 0) : 0;
+  var voiceExp = r.voice   ? (r.voice.total   || 0) : 0;
+  var voiceAct = ar.voice  ? (ar.voice.total  || 0) : 0;
+  var coachExp = r.coaching  ? (r.coaching.total  || 0) : 0;
+  var coachAct = ar.coaching ? (ar.coaching.total || 0) : 0;
 
   return [
     data.label || '',
-    inputs.students    || 0,
-    inputs.businessDays || 0,
-    r.daily   ? r.daily.per   : '',
-    r.daily   ? r.daily.total : '',
-    ar.daily  ? ar.daily.per  : '',
-    ar.daily  ? ar.daily.total: '',
-    r.voice   ? r.voice.per   : '',
-    r.voice   ? r.voice.total : '',
-    ar.voice  ? ar.voice.per  : '',
-    ar.voice  ? ar.voice.total: '',
-    r.coaching  ? r.coaching.per   : '',
-    r.coaching  ? r.coaching.total : '',
-    ar.coaching ? ar.coaching.per  : '',
-    ar.coaching ? ar.coaching.total: '',
-    r.perStudent  !== undefined ? r.perStudent  : '',
-    ar.perStudent !== undefined ? ar.perStudent : '',
-    r.total  !== undefined ? r.total  : '',
-    ar.total !== undefined ? ar.total : '',
-    ratio,
-    diffStr,
-    judge,
+    dailyExp, dailyAct, teamRatio(dailyExp, dailyAct), teamDiff(dailyExp, dailyAct), teamJudge(dailyExp, dailyAct),
+    voiceExp, voiceAct, teamRatio(voiceExp, voiceAct), teamDiff(voiceExp, voiceAct), teamJudge(voiceExp, voiceAct),
+    coachExp, coachAct, teamRatio(coachExp, coachAct), teamDiff(coachExp, coachAct), teamJudge(coachExp, coachAct),
+    r.total  || 0,
+    ar.total || 0,
     new Date().toISOString()
   ];
 }
