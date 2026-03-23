@@ -159,37 +159,6 @@ function calculate(inputs) {
   };
 }
 
-// 計算ロジックの動的解説を更新
-function updateOverview(inputs, results, dailyInstructors, voiceInstructors) {
-  const { coaching } = inputs;
-
-  const dailyEl = document.getElementById('overview-daily');
-  const voiceEl = document.getElementById('overview-voice');
-  const coachingEl = document.getElementById('overview-coaching');
-
-  if (dailyEl) {
-    if (!dailyInstructors || dailyInstructors.length === 0) {
-      dailyEl.textContent = '日報チーム: 講師を追加してください';
-    } else {
-      const parts = dailyInstructors.map(i => `${i.name || '?'} ${i.hours}h×${formatNumber(i.rate)}円`).join(' ＋ ');
-      dailyEl.textContent = `日報: ${parts} ＝ ${formatNumber(results.daily.total)}円`;
-    }
-  }
-  if (voiceEl) {
-    if (!voiceInstructors || voiceInstructors.length === 0) {
-      voiceEl.textContent = '音声チーム: 講師を追加してください';
-    } else {
-      const parts = voiceInstructors.map(i => `${i.name || '?'} ${i.hours}h×${formatNumber(i.rate)}円`).join(' ＋ ');
-      voiceEl.textContent = `音声: ${parts} ＝ ${formatNumber(results.voice.total)}円`;
-    }
-  }
-  if (coachingEl) {
-    const t1500 = coaching.students1500 * 1500 * coaching.count;
-    const t1750 = coaching.students1750 * 1750 * coaching.count;
-    coachingEl.textContent = `コーチング: 1500円×${coaching.students1500}人 ＋ 1750円×${coaching.students1750}人 × ${coaching.count}回 ＝ ${formatNumber(t1500 + t1750)}円`;
-  }
-}
-
 // 結果表示を更新（予想・実際両方）
 function updateResults(results, actualResults) {
   const el = (id) => document.getElementById(id);
@@ -266,19 +235,9 @@ function updateRatioDisplay(results, actualResults) {
   });
 }
 
-// バリデーション結果の表示
-function updateValidationMessages() {
-  const wrap = document.getElementById('validationWrap');
-  if (!wrap) return;
-  wrap.classList.add('hidden');
-  wrap.innerHTML = '';
-}
-
 // メイン計算・表示更新
 function runCalculation() {
   const inputs = getInputs();
-
-  updateValidationMessages();
 
   // 予想: 日報・音声は講師別稼働から計算
   const dailyInstructors = getInstructors('daily');
@@ -307,7 +266,6 @@ function runCalculation() {
 
   renderInstructorDisplay('daily');
   renderInstructorDisplay('voice');
-  updateOverview(inputs, results, dailyInstructors, voiceInstructors);
   updateResults(results, actualResults);
   updateRatioDisplay(results, actualResults);
 }
