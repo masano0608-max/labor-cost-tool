@@ -62,10 +62,10 @@ function getInstructorData() {
 function doPost(e) {
   try {
     var raw = '';
-    if (e.postData && e.postData.contents) {
-      raw = e.postData.contents;
-    } else if (e.parameter && e.parameter.payload) {
+    if (e.parameter && e.parameter.payload) {
       raw = e.parameter.payload;
+    } else if (e.postData && e.postData.contents) {
+      raw = e.postData.contents;
     }
     var data  = JSON.parse(raw || '{}');
     var sheet = getOrCreateSheet();
